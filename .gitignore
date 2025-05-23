@@ -1,0 +1,14 @@
+# Android / IntelliJ
+.idea/
+.gradle/
+build/
+*.iml
+local.properties
+.DS_Store
+
+# Node (si besoin)
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1070335553426",
+    "project_id": "encheres-app",
+    "storage_bucket": "encheres-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1070335553426:android:7a9d9d84dc148e7e975b4b",
+        "android_client_info": {
+          "package_name": "com.example.ynovente"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYB4G96-B5G6FTneLPvbMIrRNv0izA-Tg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
