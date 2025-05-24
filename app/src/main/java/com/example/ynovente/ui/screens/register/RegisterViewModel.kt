@@ -1,21 +1,30 @@
-package com.example.ynovente.ui.screens.login
+package com.example.ynovente.ui.screens.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.repository.FirebaseAuthRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 
-class LoginViewModel(
+class RegisterViewModel(
     private val authRepository: FirebaseAuthRepository
 ) : ViewModel() {
-    val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    fun login(email: String, password: String, onResult: (Boolean) -> Unit) {
+    fun register(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        _isLoading.value = true
         viewModelScope.launch {
-            val result = authRepository.login(email, password)
-            onResult(result)
+            val result = authRepository.register(email, password)
+            if (result) {
+                onSuccess()
+            } else {
+                onError("Erreur lors de la création du compte")
+            }
+            _isLoading.value = false
         }
     }
 
@@ -28,9 +37,5 @@ class LoginViewModel(
             val result = authRepository.loginWithGoogle(idToken)
             onResult(result)
         }
-    }
-
-    fun logout() {
-        authRepository.logout()
     }
 }

@@ -18,6 +18,7 @@ import com.example.ynovente.data.repository.FirebaseAuthRepository
 import com.example.ynovente.ui.theme.YnoventeTheme
 import com.google.firebase.FirebaseApp
 import androidx.compose.ui.platform.LocalContext
+import com.example.ynovente.ui.screens.register.RegisterScreen
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -42,7 +43,19 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
+                            navController = rootNavController,
                             viewModel = loginViewModel
+                        )
+                    }
+                    composable("register") {
+                        RegisterScreen(
+                            onRegisterSuccess = {
+                                rootNavController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            navController = rootNavController
                         )
                     }
                     composable("main") {

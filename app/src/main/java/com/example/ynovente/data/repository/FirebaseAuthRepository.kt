@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.firebase.auth.FirebaseUser
 
 class FirebaseAuthRepository(
     private val activity: Activity
@@ -27,16 +28,24 @@ class FirebaseAuthRepository(
 
     suspend fun login(email: String, password: String): Boolean = try {
         auth.signInWithEmailAndPassword(email, password).await()
-        _isLoggedIn.value = true
+        _isLoggedIn.value = auth.currentUser != null
         true
     } catch (e: Exception) {
         false
     }
 
-    suspend fun firebaseAuthWithGoogle(idToken: String): Boolean = try {
+    suspend fun register(email: String, password: String): Boolean = try {
+        auth.createUserWithEmailAndPassword(email, password).await()
+        _isLoggedIn.value = auth.currentUser != null
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    suspend fun loginWithGoogle(idToken: String): Boolean = try {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential).await()
-        _isLoggedIn.value = true
+        _isLoggedIn.value = auth.currentUser != null
         true
     } catch (e: Exception) {
         false

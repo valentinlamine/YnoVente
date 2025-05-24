@@ -1,4 +1,4 @@
-package com.example.ynovente.ui.screens.login
+package com.example.ynovente.ui.screens.register
 
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,25 +9,28 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.ynovente.data.repository.FirebaseAuthRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    navController: NavController,
-    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+fun RegisterScreen(
+    onRegisterSuccess: () -> Unit,
+    navController: NavController
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
+    val viewModel = remember { RegisterViewModel(FirebaseAuthRepository(activity)) }
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Google Sign-In Launcher
     val googleSignInLauncher = rememberLauncherForActivityResult(
@@ -39,7 +42,11 @@ fun LoginScreen(
             val idToken = account.idToken
             if (idToken != null) {
                 viewModel.firebaseAuthWithGoogle(idToken) { success ->
-                    if (!success) error = "Erreur lors de la connexion Google"
+                    if (success) {
+                        onRegisterSuccess()
+                    } else {
+                        error = "Erreur lors de la création du compte Google"
+                    }
                 }
             } else {
                 error = "Impossible de récupérer le token Google"
@@ -49,15 +56,8 @@ fun LoginScreen(
         }
     }
 
-    // Navigation automatique après login
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            onLoginSuccess()
-        }
-    }
-
     Column(modifier = Modifier.padding(32.dp)) {
-        Text(text = "Connexion", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Créer un compte", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedTextField(
             value = email,
@@ -77,6 +77,16 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirmer le mot de passe") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        )
         error?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
@@ -84,13 +94,27 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
-                viewModel.login(email, password) { success ->
-                    if (!success) error = "Login invalide"
+                if (password != confirmPassword) {
+                    error = "Les mots de passe ne correspondent pas"
+                } else {
+                    viewModel.register(email, password,
+                        onSuccess = { onRegisterSuccess() },
+                        onError = { error = it }
+                    )
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         ) {
-            Text("Se connecter")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Créer le compte")
         }
         Spacer(modifier = Modifier.height(16.dp))
         Divider()
@@ -104,14 +128,14 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text("Se connecter avec Google")
+            Text("Créer un compte avec Google")
         }
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(
-            onClick = { navController.navigate("register") },
+            onClick = { navController.popBackStack() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Créer un compte")
+            Text("Déjà inscrit ? Se connecter")
         }
     }
 }
