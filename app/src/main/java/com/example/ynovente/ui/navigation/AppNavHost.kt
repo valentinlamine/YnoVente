@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.ynovente.ui.screens.home.HomeScreen
+import com.example.ynovente.ui.screens.home.OfferDetailScreen
 import com.example.ynovente.ui.screens.products.MyProductsScreen
 import com.example.ynovente.ui.screens.profile.ProfileScreen
 
@@ -24,5 +25,9 @@ fun AppNavHost(navController: NavHostController, innerPadding: PaddingValues) {
         composable("home") { HomeScreen(navController) }
         composable("products") { MyProductsScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
+        composable("offerDetail/{offerId}") { backStackEntry ->
+            val offerId = backStackEntry.arguments?.getString("offerId") ?: ""
+            OfferDetailScreen(navController, offerId)
+        }
     }
 }

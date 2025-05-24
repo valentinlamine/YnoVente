@@ -5,5 +5,7 @@ data class Offer(
     val title: String,
     val description: String,
     val price: Double,
-    val endDate: String
+    val endDate: String,
+    val imageUrl: String? = null,
+    val user: User
 )

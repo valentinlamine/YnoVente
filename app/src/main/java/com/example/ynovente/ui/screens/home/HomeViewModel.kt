@@ -1,21 +1,19 @@
 package com.example.ynovente.ui.screens.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.model.Offer
+import com.example.ynovente.data.model.Bid
 import com.example.ynovente.data.repository.FakeOfferRepository
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 class HomeViewModel(
     private val repository: FakeOfferRepository = FakeOfferRepository()
 ) : ViewModel() {
-    private val _offers = MutableStateFlow<List<Offer>>(emptyList())
-    val offers: StateFlow<List<Offer>> = _offers
+    // Expose le StateFlow directement, sans recopier dans _offers
+    val offers: StateFlow<List<Offer>> = repository.offers
 
-    init {
-        viewModelScope.launch {
-            repository.getOffers().collect { _offers.value = it }
-        }
+    fun getBidsForOfferFlow(offerId: String): Flow<List<Bid>> {
+        return repository.getBidsForOfferFlow(offerId)
     }
 }
