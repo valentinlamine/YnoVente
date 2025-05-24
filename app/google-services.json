@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "1070335553426",
+    "firebase_url": "https://encheres-app-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "encheres-app",
     "storage_bucket": "encheres-app.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.ynovente"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1070335553426-kcm84kc363b2ll3kvsoi56g1p7p9u5kd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ynovente",
+            "certificate_hash": "5f3abc6e0923e2891b979758c1e96f925e3193ec"
+          }
+        },
+        {
+          "client_id": "1070335553426-9ng0lbpm288d92ar26v8kf5ck1krr78n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAYB4G96-B5G6FTneLPvbMIrRNv0izA-Tg"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1070335553426-9ng0lbpm288d92ar26v8kf5ck1krr78n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
