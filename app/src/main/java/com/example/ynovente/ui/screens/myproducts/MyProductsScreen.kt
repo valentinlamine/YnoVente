@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ynovente.data.model.Offer
 import com.example.ynovente.data.model.User
-import com.example.ynovente.data.repository.FakeOfferRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
