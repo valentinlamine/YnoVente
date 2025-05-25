@@ -1,5 +1,6 @@
 package com.example.ynovente.ui.screens.profile
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,12 +10,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -22,8 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +70,9 @@ fun ProfileScreen(
     LaunchedEffect(needsReauth) {
         if (needsReauth) showReauthDialog = true
     }
+
+    val context = LocalContext.current
+    val isGoogleUser = user?.providerData?.any { it.providerId == "google.com" } == true
 
     Scaffold(
         topBar = {
@@ -196,11 +202,27 @@ fun ProfileScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        FilledTonalButton(
-                            onClick = { showPasswordDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Changer le mot de passe")
+                        // Gestion du mot de passe : Google vs Email/Password
+                        if (isGoogleUser) {
+                            FilledTonalButton(
+                                onClick = {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        "https://myaccount.google.com/security".toUri()
+                                    )
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Gérer le mot de passe via Google")
+                            }
+                        } else {
+                            FilledTonalButton(
+                                onClick = { showPasswordDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Changer le mot de passe")
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
