@@ -9,6 +9,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -81,5 +82,43 @@ class FirebaseOfferRepository {
         }
         ref.addValueEventListener(listener)
         awaitClose { ref.removeEventListener(listener) }
+    }
+
+    // AJOUT : Mise à jour d'une offre (titre, description, date de fin)
+    suspend fun updateOffer(
+        offerId: String,
+        title: String? = null,
+        description: String? = null,
+        endDate: String? = null
+    ) {
+        val updates = mutableMapOf<String, Any>()
+        title?.let { updates["title"] = it }
+        description?.let { updates["description"] = it }
+        endDate?.let { updates["endDate"] = it }
+        if (updates.isNotEmpty()) {
+            offersRef.child(offerId).updateChildren(updates).await()
+        }
+    }
+
+    // AJOUT : Suppression d'une offre, de ses bids et de son image
+    suspend fun deleteOffer(offerId: String) {
+        // Récupère l'offre pour obtenir l'URL de l'image (avant suppression)
+        val offerSnapshot = offersRef.child(offerId).get().await()
+        val offer = offerSnapshot.getValue(Offer::class.java)
+        val imageUrl = offer?.imageUrl
+
+        // Supprime l'offre
+        offersRef.child(offerId).removeValue().await()
+        // Supprime les bids associés
+        database.getReference("bids").child(offerId).removeValue().await()
+        // Supprime l'image si elle existe
+        imageUrl?.let {
+            try {
+                val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(it)
+                storageRef.delete().await()
+            } catch (e: Exception) {
+                // Si l'image n'existe pas ou déjà supprimée, ignorer l'erreur
+            }
+        }
     }
 }
