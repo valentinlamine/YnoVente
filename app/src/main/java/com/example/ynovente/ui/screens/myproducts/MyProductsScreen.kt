@@ -31,24 +31,17 @@ enum class MyProductsFilterType { DATE, PRICE, NAME }
 fun MyProductsScreen(
     navController: NavController,
     innerPadding: PaddingValues = PaddingValues(0.dp),
-    offerRepository: FakeOfferRepository,
-    currentUser: User
+    viewModel: MyProductsViewModel
 ) {
-    // Les offres de l'utilisateur courant
-    val myOffers by offerRepository.offers.collectAsState()
+    val myOffers by viewModel.myOffers.collectAsState()
     var filter by remember { mutableStateOf(MyProductsFilterType.DATE) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
 
-    val filteredOffers = remember(myOffers, currentUser) {
-        myOffers.filter { it.userId == currentUser.id }
-    }
-
-    // Tri selon le filtre sélectionné
-    val sortedOffers = remember(filteredOffers, filter) {
+    val sortedOffers = remember(myOffers, filter) {
         when (filter) {
-            MyProductsFilterType.DATE -> filteredOffers.sortedBy { it.endDate }
-            MyProductsFilterType.PRICE -> filteredOffers.sortedBy { it.price }
-            MyProductsFilterType.NAME -> filteredOffers.sortedBy { it.title }
+            MyProductsFilterType.DATE -> myOffers.sortedBy { it.endDate }
+            MyProductsFilterType.PRICE -> myOffers.sortedBy { it.price }
+            MyProductsFilterType.NAME -> myOffers.sortedBy { it.title }
         }
     }
 

@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ynovente.data.model.Offer
+import com.example.ynovente.data.repository.FirebaseOfferRepository
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 enum class FilterType { DATE, PRICE, NAME }
@@ -26,16 +28,19 @@ enum class FilterType { DATE, PRICE, NAME }
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    firebaseOfferRepository: FirebaseOfferRepository,
 ) {
-    val offers by viewModel.offers.collectAsState()
+    val offerFlow = remember { firebaseOfferRepository.getOffersFlow() }
+    val offers by offerFlow.collectAsState(initial = emptyList())
     var filter by remember { mutableStateOf(FilterType.DATE) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
 
     // Tri selon le filtre sélectionné
     val sortedOffers = remember(offers, filter) {
         when (filter) {
-            FilterType.DATE -> offers.sortedBy { it.endDate }
+            FilterType.DATE -> offers.sortedBy {
+                try { LocalDateTime.parse(it.endDate) } catch (e: Exception) { null }
+            }
             FilterType.PRICE -> offers.sortedBy { it.price }
             FilterType.NAME -> offers.sortedBy { it.title }
         }
@@ -146,7 +151,13 @@ fun AuctionCard(
                     )
                 )
                 Text(
-                    "Fin: ${offer.endDate.format(dateFormatter)}",
+                    "Fin: ${
+                        try {
+                            LocalDateTime.parse(offer.endDate).format(dateFormatter)
+                        } catch (e: Exception) {
+                            offer.endDate
+                        }
+                    }",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

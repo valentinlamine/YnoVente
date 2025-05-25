@@ -1,11 +1,11 @@
 package com.example.ynovente.data.model
 
 data class Offer(
-    val id: String,
-    val title: String,
-    val description: String,
-    val price: Double,
-    val endDate: String,
-    val imageUrl: String? = null,
-    val userId: String
+    var id: String = "",
+    var title: String = "",
+    var description: String = "",
+    var price: Double = 0.0,
+    var endDate: String = "",
+    var imageUrl: String? = null,
+    var userId: String = ""
 )

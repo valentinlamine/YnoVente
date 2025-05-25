@@ -1,20 +1,20 @@
 package com.example.ynovente.ui.screens.myproducts
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.model.Offer
-import com.example.ynovente.data.model.User
-import com.example.ynovente.data.repository.FakeOfferRepository
+import com.example.ynovente.data.repository.FirebaseOfferRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MyProductsViewModel(
-    private val offerRepository: FakeOfferRepository,
-    private val currentUser: User
+    private val offerRepository: FirebaseOfferRepository
 ) : ViewModel() {
-    // Les offres de l'utilisateur courant (filtrage par userId, plus par user)
-    val myOffers: StateFlow<List<Offer>> =
-        offerRepository.offers
-            .map { offers -> offers.filter { it.userId == currentUser.id } }
-            .stateIn(CoroutineScope(Dispatchers.Default), SharingStarted.Lazily, emptyList())
+    private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    val myOffers: StateFlow<List<Offer>> = offerRepository
+        .getOffersFlow()
+        .map { offers -> offers.filter { it.userId == currentUserId } }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 }

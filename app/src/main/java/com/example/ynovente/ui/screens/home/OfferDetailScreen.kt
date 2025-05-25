@@ -10,18 +10,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.ynovente.data.model.Bid
 import com.example.ynovente.data.model.Offer
+import com.example.ynovente.data.repository.FirebaseOfferRepository
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -30,12 +32,16 @@ import java.time.format.DateTimeFormatter
 fun OfferDetailScreen(
     navController: NavController,
     offerId: String,
-    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    firebaseOfferRepository: FirebaseOfferRepository
 ) {
-    val offers by viewModel.offers.collectAsState()
-    val offer = offers.find { it.id == offerId }
+    // Charge l'offre depuis Firebase en temps réel
+    val offerFlow = remember(offerId) { firebaseOfferRepository.getOfferByIdFlow(offerId) }
+    val offer by offerFlow.collectAsState(initial = null)
     val snackbarHostState = remember { SnackbarHostState() }
     var lastBidPlaced by remember { mutableStateOf<Double?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val user = FirebaseAuth.getInstance().currentUser
+    val userName = user?.displayName ?: user?.email ?: "Utilisateur"
 
     // Affiche le snackbar quand une enchère est validée
     LaunchedEffect(lastBidPlaced) {
@@ -68,15 +74,28 @@ fun OfferDetailScreen(
                 Text("Offre introuvable", style = MaterialTheme.typography.headlineSmall)
             }
         } else {
+            val currentOffer: Offer = offer!! // Utilisation du !!
             OfferDetailContent(
-                offer = offer,
+                offer = currentOffer,
                 onBid = { amount ->
-                    // Ici tu déclenches juste la mise à jour d'état
-                    lastBidPlaced = amount
+                    coroutineScope.launch {
+                        try {
+                            firebaseOfferRepository.placeBid(
+                                offerId = currentOffer.id,
+                                userId = user?.uid ?: "",
+                                userName = userName,
+                                amount = amount
+                            )
+                            lastBidPlaced = amount
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar("Erreur lors de la surenchère : ${e.message}")
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(paddingValues),
+                firebaseOfferRepository = firebaseOfferRepository
             )
         }
     }
@@ -88,10 +107,11 @@ fun OfferDetailContent(
     offer: Offer,
     onBid: (Double) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    firebaseOfferRepository: FirebaseOfferRepository
 ) {
     var bidAmount by remember { mutableStateOf("") }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
+    val bids by firebaseOfferRepository.getBidsForOfferFlow(offer.id).collectAsState(initial = emptyList())
 
     Column(
         modifier = modifier
@@ -99,19 +119,20 @@ fun OfferDetailContent(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Image (dummy si pas encore branché)
+        // Affichage de l'image de l'offre (Firebase Storage)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Remplace par une vraie image si tu en as
-            Image(
-                painter = painterResource(id = com.example.ynovente.R.drawable.ic_launcher_foreground),
-                contentDescription = offer.title,
-                modifier = Modifier.size(120.dp)
-            )
+            if (!offer.imageUrl.isNullOrBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(offer.imageUrl),
+                    contentDescription = offer.title,
+                    modifier = Modifier.size(160.dp)
+                )
+            }
         }
 
         Text(
@@ -135,7 +156,14 @@ fun OfferDetailContent(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Fin : ${offer.endDate.format(dateFormatter)}",
+                "Fin : ${
+                    try {
+                        LocalDateTime.parse(offer.endDate)
+                            .format(dateFormatter)
+                    } catch (e: Exception) {
+                        offer.endDate
+                    }
+                }",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -156,8 +184,6 @@ fun OfferDetailContent(
                 if (amount != null && amount > offer.price) {
                     onBid(amount)
                     bidAmount = ""
-                } else {
-                    // Affichage d'une erreur simple (snackbar ou toast peut être ajouté)
                 }
             },
             enabled = bidAmount.toDoubleOrNull()?.let { it > offer.price } ?: false,
@@ -165,7 +191,7 @@ fun OfferDetailContent(
         ) {
             Text("Enchérir")
         }
-        val bids by viewModel.getBidsForOfferFlow(offer.id).collectAsState(initial = emptyList())
+
         BidsHistorySection(bids = bids)
     }
 }
@@ -184,7 +210,7 @@ fun BidsHistorySection(bids: List<Bid>, modifier: Modifier = Modifier) {
                         .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("${bid.user.name} :", fontWeight = FontWeight.Bold)
+                    Text("${bid.userName} :", fontWeight = FontWeight.Bold)
                     Text("${bid.amount} €")
                     Text(bid.date.substring(11,16)) // Heure HH:mm
                 }
