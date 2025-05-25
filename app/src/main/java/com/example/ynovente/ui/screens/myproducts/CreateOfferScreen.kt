@@ -197,6 +197,9 @@ fun CreateOfferScreen(
         }
     }
 
+    // Nouvel état pour la confirmation d'annulation
+    var showCancelDialog by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -372,53 +375,89 @@ fun CreateOfferScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    when {
-                        title.isBlank() -> error = "Le titre est obligatoire"
-                        description.isBlank() -> error = "La description est obligatoire"
-                        price.isBlank() || price.toDoubleOrNull() == null -> error = "Prix invalide"
-                        endDate.isBlank() -> error = "La date de fin est obligatoire"
-                        imageUploading -> error = "Attendez la fin de l'envoi de l'image"
-                        else -> {
-                            error = null
-                            isSubmitting = true
-                            scope.launch {
-                                try {
-                                    val userId = FirebaseAuth.getInstance().currentUser?.uid
-                                    if (userId == null) {
-                                        error = "Utilisateur non connecté"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { showCancelDialog = true },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp)
+                ) {
+                    Text("Annuler", fontSize = 17.sp, modifier = Modifier.padding(vertical = 2.dp))
+                }
+                Button(
+                    onClick = {
+                        when {
+                            title.isBlank() -> error = "Le titre est obligatoire"
+                            description.isBlank() -> error = "La description est obligatoire"
+                            price.isBlank() || price.toDoubleOrNull() == null -> error = "Prix invalide"
+                            endDate.isBlank() -> error = "La date de fin est obligatoire"
+                            imageUploading -> error = "Attendez la fin de l'envoi de l'image"
+                            else -> {
+                                error = null
+                                isSubmitting = true
+                                scope.launch {
+                                    try {
+                                        val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                        if (userId == null) {
+                                            error = "Utilisateur non connecté"
+                                            isSubmitting = false
+                                            return@launch
+                                        }
+                                        val newOffer = Offer(
+                                            id = "",
+                                            title = title,
+                                            description = description,
+                                            price = price.toDouble(),
+                                            endDate = endDate,
+                                            imageUrl = imageUrl,
+                                            userId = userId
+                                        )
+                                        offerRepository.addOffer(newOffer)
                                         isSubmitting = false
-                                        return@launch
+                                        navController.popBackStack()
+                                    } catch (e: Exception) {
+                                        error = "Erreur lors de la création : ${e.message}"
+                                        isSubmitting = false
                                     }
-                                    val newOffer = Offer(
-                                        id = "",
-                                        title = title,
-                                        description = description,
-                                        price = price.toDouble(),
-                                        endDate = endDate,
-                                        imageUrl = imageUrl,
-                                        userId = userId
-                                    )
-                                    offerRepository.addOffer(newOffer)
-                                    isSubmitting = false
-                                    navController.popBackStack()
-                                } catch (e: Exception) {
-                                    error = "Erreur lors de la création : ${e.message}"
-                                    isSubmitting = false
                                 }
                             }
                         }
+                    },
+                    enabled = !isSubmitting && !imageUploading,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .weight(2f)
+                        .height(54.dp)
+                ) {
+                    Text("Créer l'offre", fontSize = 17.sp, modifier = Modifier.padding(vertical = 2.dp))
+                }
+            }
+        }
+
+        // Dialog d'annulation
+        if (showCancelDialog) {
+            AlertDialog(
+                onDismissRequest = { showCancelDialog = false },
+                title = { Text("Annuler la création ?") },
+                text = { Text("Voulez-vous vraiment annuler la création de cette offre ? Les informations saisies seront perdues.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showCancelDialog = false
+                        navController.popBackStack()
+                    }) {
+                        Text("Oui", color = MaterialTheme.colorScheme.error)
                     }
                 },
-                enabled = !isSubmitting && !imageUploading,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-            ) {
-                Text("Créer l'offre", fontSize = 17.sp, modifier = Modifier.padding(vertical = 2.dp))
-            }
+                dismissButton = {
+                    TextButton(onClick = { showCancelDialog = false }) {
+                        Text("Non")
+                    }
+                }
+            )
         }
     }
 }

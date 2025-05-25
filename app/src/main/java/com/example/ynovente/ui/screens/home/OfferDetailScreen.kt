@@ -5,22 +5,33 @@ import android.app.TimePickerDialog
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.ynovente.data.model.Bid
@@ -53,7 +64,6 @@ fun OfferDetailScreen(
     var editSuccess by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    // Affiche le snackbar quand une enchère est validée
     LaunchedEffect(lastBidPlaced) {
         lastBidPlaced?.let { amount ->
             snackbarHostState.showSnackbar("Enchère de $amount€ placée !")
@@ -61,7 +71,6 @@ fun OfferDetailScreen(
         }
     }
 
-    // Après modification, repasse en mode détail et affiche le snackbar
     LaunchedEffect(editSuccess) {
         if (editSuccess) {
             isEditing = false
@@ -84,7 +93,6 @@ fun OfferDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
 
-        // Bloque l'affichage de "Offre introuvable" si suppression en cours
         if (offer == null) {
             if (!isDeleting) {
                 Box(
@@ -95,8 +103,6 @@ fun OfferDetailScreen(
                 ) {
                     Text("Offre introuvable", style = MaterialTheme.typography.headlineSmall)
                 }
-            } else {
-                // Optionnel : Affiche rien ou un CircularProgressIndicator()
             }
         } else {
             val currentOffer: Offer = offer!!
@@ -114,7 +120,7 @@ fun OfferDetailScreen(
                                     description = updatedDescription,
                                     endDate = updatedEndDate
                                 )
-                                editSuccess = true // Va déclencher LaunchedEffect pour repasser en mode détail
+                                editSuccess = true
                             } catch (e: Exception) {
                                 snackbarHostState.showSnackbar("Erreur lors de la modification : ${e.message}")
                             }
@@ -145,6 +151,8 @@ fun OfferDetailScreen(
                     },
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(paddingValues),
                     firebaseOfferRepository = firebaseOfferRepository,
                     showEditButton = isMyOffer,
@@ -165,6 +173,260 @@ fun OfferDetailScreen(
                         }
                     }
                 )
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun OfferDetailContent(
+    offer: Offer,
+    onBid: (Double) -> Unit,
+    modifier: Modifier = Modifier,
+    firebaseOfferRepository: FirebaseOfferRepository,
+    showEditButton: Boolean = false,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
+    var bidAmount by remember { mutableStateOf("") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
+    val bids by firebaseOfferRepository.getBidsForOfferFlow(offer.id).collectAsState(initial = emptyList())
+
+    Column(
+        modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // CARD PRINCIPALE
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // IMAGE HERO
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(170.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!offer.imageUrl.isNullOrBlank()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(offer.imageUrl),
+                            contentDescription = offer.title,
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(1.5f)
+                                .clip(RoundedCornerShape(14.dp))
+                        )
+                    } else {
+                        Icon(
+                            Icons.Filled.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        offer.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (showEditButton) {
+                        Row {
+                            IconButton(onClick = onEdit) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = "Modifier"
+                                )
+                            }
+                            IconButton(
+                                onClick = { showDeleteConfirm = true },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Supprimer")
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    offer.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(Modifier.height(10.dp))
+                // INFOS CLÉS EN CHIPS
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AssistChip(
+                        onClick = {},
+                        label = { Text("Prix : %.2f €".format(offer.price)) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Euro, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                    )
+                    AssistChip(
+                        onClick = {},
+                        label = {
+                            Text(
+                                "Fin : ${
+                                    try {
+                                        LocalDateTime.parse(offer.endDate)
+                                            .format(dateFormatter)
+                                    } catch (e: Exception) {
+                                        offer.endDate
+                                    }
+                                }"
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                    )
+                }
+            }
+        }
+
+        // SECTION ENCHÈRE : PAS DE CARD, JUSTE UN ESPACE AIRÉ
+        Spacer(Modifier.height(6.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 0.dp)
+                .background(
+                    color = Color.Transparent
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Votre enchère",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+            OutlinedTextField(
+                value = bidAmount,
+                onValueChange = { bidAmount = it },
+                label = { Text("Montant (€)") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                leadingIcon = { Text("€") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Button(
+                onClick = {
+                    val amount = bidAmount.toDoubleOrNull()
+                    if (amount != null && amount > offer.price) {
+                        onBid(amount)
+                        bidAmount = ""
+                    }
+                },
+                enabled = bidAmount.toDoubleOrNull()?.let { it > offer.price } ?: false,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text("Enchérir")
+            }
+        }
+
+        // HISTORIQUE ENCHERES : PAS DE CARD, JUSTE UN ENCADRÉ AVEC UN FOND LÉGER
+        Spacer(Modifier.height(10.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 1.dp
+        ) {
+            BidsHistorySectionMaterial3(bids = bids, modifier = Modifier.padding(16.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+
+        // Boîte de dialogue de confirmation de suppression
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            onDelete()
+                        }
+                    ) { Text("Supprimer", color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeleteConfirm = false }
+                    ) { Text("Annuler") }
+                },
+                title = { Text("Confirmation") },
+                text = { Text("Voulez-vous vraiment supprimer cette offre ? Cette action est irréversible.") }
+            )
+        }
+    }
+}
+
+@Composable
+fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text("Historique des enchères", style = MaterialTheme.typography.titleMedium)
+        if (bids.isEmpty()) {
+            Text("Aucune enchère pour le moment.")
+        } else {
+            bids.forEach { bid ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = bid.userName.take(1).uppercase(),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(Modifier.width(7.dp))
+                        Text("${bid.userName}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                    Text("%.2f €".format(bid.amount), fontWeight = FontWeight.Medium)
+                    Text(bid.date.substring(11,16), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                }
             }
         }
     }
@@ -193,7 +455,6 @@ fun OfferEditContent(
     var showTimePicker by remember { mutableStateOf(false) }
     val calendar = remember { Calendar.getInstance() }
 
-    // Pré-remplit le calendar avec la date actuelle
     LaunchedEffect(tempPickedDate) {
         tempPickedDate?.let {
             calendar.set(Calendar.YEAR, it.year)
@@ -236,198 +497,62 @@ fun OfferEditContent(
         }
     }
 
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Card(
+        modifier = modifier.padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Text("Modification de l'offre", style = MaterialTheme.typography.headlineSmall)
-
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Titre") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = if (endDate.isNotBlank()) {
-                try {
-                    LocalDateTime.parse(endDate, dateFormatter)
-                        .format(displayFormatter)
-                } catch (e: Exception) { endDate }
-            } else "",
-            onValueChange = {},
-            label = { Text("Date de fin") },
-            readOnly = true,
-            enabled = false,
-            trailingIcon = {
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(Icons.Filled.CalendarToday, contentDescription = "Choisir une date")
-                }
-            },
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { showDatePicker = true },
-            placeholder = { Text("Choisir une date de fin") }
-        )
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { onCancel() }) { Text("Annuler") }
-            Spacer(Modifier.width(8.dp))
-            Button(
-                onClick = {
-                    onSave(title, description, endDate)
-                },
-                enabled = title.isNotBlank() && description.isNotBlank() && endDate.isNotBlank()
-            ) {
-                Text("Enregistrer")
-            }
-        }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun OfferDetailContent(
-    offer: Offer,
-    onBid: (Double) -> Unit,
-    modifier: Modifier = Modifier,
-    firebaseOfferRepository: FirebaseOfferRepository,
-    showEditButton: Boolean = false,
-    onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
-) {
-    var bidAmount by remember { mutableStateOf("") }
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
-    val bids by firebaseOfferRepository.getBidsForOfferFlow(offer.id).collectAsState(initial = emptyList())
-
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            contentAlignment = Alignment.Center
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            if (!offer.imageUrl.isNullOrBlank()) {
-                Image(
-                    painter = rememberAsyncImagePainter(offer.imageUrl),
-                    contentDescription = offer.title,
-                    modifier = Modifier.size(160.dp)
-                )
-            }
-        }
-
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                offer.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+            Text("Modification de l'offre", style = MaterialTheme.typography.headlineSmall)
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Titre") },
+                modifier = Modifier.fillMaxWidth()
             )
-            if (showEditButton) {
-                Row {
-                    Button(onClick = onEdit) {
-                        Text("Modifier")
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = onDelete,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Supprimer", color = MaterialTheme.colorScheme.onError)
-                    }
-                }
-            }
-        }
-
-        Text(
-            offer.description,
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "Prix actuel : ${offer.price} €",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth()
             )
-            Text(
-                "Fin : ${
+            OutlinedTextField(
+                value = if (endDate.isNotBlank()) {
                     try {
-                        LocalDateTime.parse(offer.endDate)
-                            .format(dateFormatter)
-                    } catch (e: Exception) {
-                        offer.endDate
+                        LocalDateTime.parse(endDate, dateFormatter)
+                            .format(displayFormatter)
+                    } catch (e: Exception) { endDate }
+                } else "",
+                onValueChange = {},
+                label = { Text("Date de fin") },
+                readOnly = true,
+                enabled = false,
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Filled.CalendarToday, contentDescription = "Choisir une date")
                     }
-                }",
-                style = MaterialTheme.typography.bodyMedium
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
+                placeholder = { Text("Choisir une date de fin") }
             )
-        }
-
-        OutlinedTextField(
-            value = bidAmount,
-            onValueChange = { bidAmount = it },
-            label = { Text("Votre enchère (€)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Text("€") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-        Button(
-            onClick = {
-                val amount = bidAmount.toDoubleOrNull()
-                if (amount != null && amount > offer.price) {
-                    onBid(amount)
-                    bidAmount = ""
-                }
-            },
-            enabled = bidAmount.toDoubleOrNull()?.let { it > offer.price } ?: false,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Enchérir")
-        }
-
-        BidsHistorySection(bids = bids)
-    }
-}
-
-@Composable
-fun BidsHistorySection(bids: List<Bid>, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Text("Historique des enchères", style = MaterialTheme.typography.titleMedium)
-        if (bids.isEmpty()) {
-            Text("Aucune enchère pour le moment.")
-        } else {
-            bids.forEach { bid ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { onCancel() }) { Text("Annuler") }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        onSave(title, description, endDate)
+                    },
+                    enabled = title.isNotBlank() && description.isNotBlank() && endDate.isNotBlank()
                 ) {
-                    Text("${bid.userName} :", fontWeight = FontWeight.Bold)
-                    Text("${bid.amount} €")
-                    Text(bid.date.substring(11,16)) // Heure HH:mm
+                    Text("Enregistrer")
                 }
             }
         }
