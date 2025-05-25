@@ -103,13 +103,19 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
-                if (password != confirmPassword) {
-                    error = "Les mots de passe ne correspondent pas"
-                } else {
-                    viewModel.register(name, email, password,
-                        onSuccess = { onRegisterSuccess() },
-                        onError = { error = it }
-                    )
+                when {
+                    password.length < 6 -> {
+                        error = "Le mot de passe doit contenir au moins 6 caractères"
+                    }
+                    password != confirmPassword -> {
+                        error = "Les mots de passe ne correspondent pas"
+                    }
+                    else -> {
+                        viewModel.register(name, email, password,
+                            onSuccess = { onRegisterSuccess() },
+                            onError = { error = it }
+                        )
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
