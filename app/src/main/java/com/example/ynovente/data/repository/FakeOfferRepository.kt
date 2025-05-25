@@ -90,25 +90,29 @@ class FakeOfferRepository {
 
     private val _offers = MutableStateFlow<List<Offer>>(
         listOf(
-            Offer(id = "1", title = "Vélo de course", description = "Super vélo", price = 120.0, endDate = "2023-12-31", user = users[0]),
-            Offer(id = "2", title = "PC Portable", description = "Gamer", price = 650.0, endDate = "2023-11-30", user = users[1]),
-            Offer(id = "3", title = "Livre Kotlin", description = "Pour apprendre", price = 15.0, endDate = "2023-10-15", user = users[0]),
-            Offer(id = "4", title = "Console de jeux", description = "Dernier modèle", price = 300.0, endDate = "2023-12-15", user = users[1]),
-            Offer(id = "5", title = "Table de jardin", description = "En bois massif", price = 200.0, endDate = "2024-01-01", user = users[0]),
-            Offer(id = "6", title = "Smartphone", description = "Dernier modèle", price = 800.0, endDate = "2023-11-20", user = users[1]),
-            Offer(id = "7", title = "Appareil photo", description = "Reflex numérique", price = 450.0, endDate = "2023-12-05", user = users[0]),
-            Offer(id = "8", title = "Chaise de bureau", description = "Ergonomique", price = 75.0, endDate = "2023-10-30", user = users[1]),
-            Offer(id = "9", title = "Montre connectée", description = "Pour le sport", price = 250.0, endDate = "2023-11-15", user = users[0]),
-            Offer(id = "10", title = "Sac à dos", description = "Pour l'école", price = 40.0, endDate = "2023-10-20", user = users[1]),
-            Offer(id = "11", title = "Tente de camping", description = "4 personnes", price = 150.0, endDate = "2024-02-01", user = users[0]),
-            Offer(id = "12", title = "Grill électrique", description = "Pour barbecue", price = 100.0, endDate = "2023-12-10", user = users[1]),
-            Offer(id = "13", title = "Casque audio", description = "Sans fil", price = 120.0, endDate = "2023-11-25", user = users[0]),
-            Offer(id = "14", title = "Batterie externe", description = "Pour smartphone", price = 30.0, endDate = "2023-10-25", user = users[1]),
-            Offer(id = "15", title = "Jeu vidéo", description = "Action RPG", price = 60.0, endDate = "2023-11-05", user = users[0])
+            Offer(id = "1", title = "Vélo de course", description = "Super vélo", price = 120.0, endDate = "2023-12-31", userId = users[0].id),
+            Offer(id = "2", title = "PC Portable", description = "Gamer", price = 650.0, endDate = "2023-11-30", userId = users[1].id),
+            Offer(id = "3", title = "Livre Kotlin", description = "Pour apprendre", price = 15.0, endDate = "2023-10-15", userId = users[0].id),
+            Offer(id = "4", title = "Console de jeux", description = "Dernier modèle", price = 300.0, endDate = "2023-12-15", userId = users[1].id),
+            Offer(id = "5", title = "Table de jardin", description = "En bois massif", price = 200.0, endDate = "2024-01-01", userId = users[0].id),
+            Offer(id = "6", title = "Smartphone", description = "Dernier modèle", price = 800.0, endDate = "2023-11-20", userId = users[1].id),
+            Offer(id = "7", title = "Appareil photo", description = "Reflex numérique", price = 450.0, endDate = "2023-12-05", userId = users[0].id),
+            Offer(id = "8", title = "Chaise de bureau", description = "Ergonomique", price = 75.0, endDate = "2023-10-30", userId = users[1].id),
+            Offer(id = "9", title = "Montre connectée", description = "Pour le sport", price = 250.0, endDate = "2023-11-15", userId = users[0].id),
+            Offer(id = "10", title = "Sac à dos", description = "Pour l'école", price = 40.0, endDate = "2023-10-20", userId = users[1].id),
+            Offer(id = "11", title = "Tente de camping", description = "4 personnes", price = 150.0, endDate = "2024-02-01", userId = users[0].id),
+            Offer(id = "12", title = "Grill électrique", description = "Pour barbecue", price = 100.0, endDate = "2023-12-10", userId = users[1].id),
+            Offer(id = "13", title = "Casque audio", description = "Sans fil", price = 120.0, endDate = "2023-11-25", userId = users[0].id),
+            Offer(id = "14", title = "Batterie externe", description = "Pour smartphone", price = 30.0, endDate = "2023-10-25", userId = users[1].id),
+            Offer(id = "15", title = "Jeu vidéo", description = "Action RPG", price = 60.0, endDate = "2023-11-05", userId = users[0].id)
         )
     )
 
     val offers: StateFlow<List<Offer>> = _offers.asStateFlow()
+
+    fun addOffer(offer: Offer) {
+        _offers.value = _offers.value + offer
+    }
 
     fun getBidsForOffer(offerId: String): List<Bid> =
         bids.filter { it.offerId == offerId }.sortedByDescending { it.date }
