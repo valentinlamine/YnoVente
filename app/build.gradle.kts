@@ -64,4 +64,5 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.compose.material:material-icons-extended")
 }

@@ -26,6 +26,7 @@ fun RegisterScreen(
     val activity = context as Activity
     val viewModel = remember { RegisterViewModel(FirebaseAuthRepository(activity)) }
 
+    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -59,6 +60,14 @@ fun RegisterScreen(
     Column(modifier = Modifier.padding(32.dp)) {
         Text(text = "Créer un compte", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nom") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -97,7 +106,7 @@ fun RegisterScreen(
                 if (password != confirmPassword) {
                     error = "Les mots de passe ne correspondent pas"
                 } else {
-                    viewModel.register(email, password,
+                    viewModel.register(name, email, password,
                         onSuccess = { onRegisterSuccess() },
                         onError = { error = it }
                     )

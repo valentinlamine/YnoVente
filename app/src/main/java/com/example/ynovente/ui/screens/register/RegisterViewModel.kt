@@ -15,11 +15,12 @@ class RegisterViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    fun register(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun register(name: String, email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         _isLoading.value = true
         viewModelScope.launch {
             val result = authRepository.register(email, password)
             if (result) {
+                authRepository.updateProfileName(name)
                 onSuccess()
             } else {
                 onError("Erreur lors de la création du compte")
