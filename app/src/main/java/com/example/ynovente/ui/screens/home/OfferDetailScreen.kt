@@ -38,7 +38,12 @@ import com.example.ynovente.data.repository.FirebaseUserRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -447,6 +452,20 @@ fun OfferDetailContent(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun formatBidDateDynamic(zdt: ZonedDateTime): String {
+    val now = ZonedDateTime.now(zdt.zone).truncatedTo(ChronoUnit.DAYS)
+    val bidDay = zdt.truncatedTo(ChronoUnit.DAYS)
+    val diffDays = ChronoUnit.DAYS.between(bidDay, now)
+    return when {
+        diffDays == 0L -> "Aujourd'hui • ${zdt.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        diffDays == 1L -> "Hier • ${zdt.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        diffDays in 2..6 -> "${zdt.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.FRENCH).replaceFirstChar { it.uppercase() }} • ${zdt.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        else -> "${zdt.format(DateTimeFormatter.ofPattern("dd MMM"))} • ${zdt.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
@@ -455,6 +474,11 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
             Text("Aucune enchère pour le moment.")
         } else {
             bids.forEach { bid ->
+                val localDate = try {
+                    ZonedDateTime.parse(bid.date).withZoneSameInstant(ZoneId.of("Europe/Paris"))
+                } catch (e: Exception) {
+                    null
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -481,7 +505,7 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
                     }
                     Text("%.2f €".format(bid.amount), fontWeight = FontWeight.Medium)
                     Text(
-                        bid.date.takeIf { it.length > 15 }?.substring(11, 16) ?: "",
+                        localDate?.let { formatBidDateDynamic(it) } ?: bid.date,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
