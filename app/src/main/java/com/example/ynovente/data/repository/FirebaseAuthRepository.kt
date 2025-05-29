@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.messaging.FirebaseMessaging
 
 class FirebaseAuthRepository(
     private val activity: Activity
@@ -32,9 +33,10 @@ class FirebaseAuthRepository(
     suspend fun login(email: String, password: String): Boolean = try {
         auth.signInWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque connexion
+        // Synchronisation de l'utilisateur à chaque connexion avec le token FCM
         auth.currentUser?.let { user ->
-            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+            val token = FirebaseMessaging.getInstance().token.await()
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
         true
     } catch (e: Exception) {
@@ -44,9 +46,10 @@ class FirebaseAuthRepository(
     suspend fun register(email: String, password: String): Boolean = try {
         auth.createUserWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque inscription
+        // Synchronisation de l'utilisateur à chaque inscription avec le token FCM
         auth.currentUser?.let { user ->
-            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+            val token = FirebaseMessaging.getInstance().token.await()
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
         true
     } catch (e: Exception) {
@@ -60,18 +63,20 @@ class FirebaseAuthRepository(
                 .setDisplayName(name)
                 .build()
         )?.await()
-        // Synchronisation du nom dans la base
+        // Synchronisation du nom dans la base avec le token FCM
         user?.let {
-            saveUserToDatabase(it.uid, name, it.email ?: "")
+            val token = FirebaseMessaging.getInstance().token.await()
+            saveUserToDatabase(it.uid, name, it.email ?: "", token)
         }
     }
 
     suspend fun updateProfileEmail(newEmail: String) {
         val user = auth.currentUser
         user?.updateEmail(newEmail)?.await()
-        // Synchronisation de l'email dans la base
+        // Synchronisation de l'email dans la base avec le token FCM
         user?.let {
-            saveUserToDatabase(it.uid, it.displayName ?: "", newEmail)
+            val token = FirebaseMessaging.getInstance().token.await()
+            saveUserToDatabase(it.uid, it.displayName ?: "", newEmail, token)
         }
     }
 
@@ -79,9 +84,10 @@ class FirebaseAuthRepository(
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential).await()
         _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque connexion Google
+        // Synchronisation de l'utilisateur à chaque connexion Google avec le token FCM
         auth.currentUser?.let { user ->
-            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+            val token = FirebaseMessaging.getInstance().token.await()
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
         true
     } catch (e: Exception) {
@@ -110,13 +116,15 @@ class FirebaseAuthRepository(
         return auth.currentUser
     }
 
-    suspend fun saveUserToDatabase(uid: String, name: String, email: String) {
+    // Modifiée pour accepter le token FCM (déjà fait)
+    suspend fun saveUserToDatabase(uid: String, name: String, email: String, fcmToken: String? = null) {
         val usersRef = FirebaseDatabase.getInstance().getReference("users")
-        val userMap = mapOf(
+        val userMap = mutableMapOf(
             "uid" to uid,
             "name" to name,
             "email" to email
         )
+        fcmToken?.let { userMap["fcmToken"] = it }
         usersRef.child(uid).setValue(userMap).await()
     }
 }

@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 
 class RegisterViewModel(
     private val authRepository: FirebaseAuthRepository
@@ -21,10 +23,10 @@ class RegisterViewModel(
             val result = authRepository.register(email, password)
             if (result) {
                 authRepository.updateProfileName(name)
-                // Ajout ici : sauvegarde dans la database
                 val user = authRepository.getCurrentUser()
                 if (user != null) {
-                    authRepository.saveUserToDatabase(user.uid, name, user.email ?: email)
+                    val token = FirebaseMessaging.getInstance().token.await()
+                    authRepository.saveUserToDatabase(user.uid, name, user.email ?: email, token)
                 }
                 onSuccess()
             } else {
@@ -33,7 +35,6 @@ class RegisterViewModel(
             _isLoading.value = false
         }
     }
-
     fun getGoogleSignInClient(): GoogleSignInClient {
         return authRepository.getGoogleSignInClient()
     }

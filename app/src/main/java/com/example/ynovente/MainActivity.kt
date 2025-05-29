@@ -1,10 +1,13 @@
 package com.example.ynovente
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -19,6 +22,7 @@ import com.example.ynovente.ui.theme.YnoventeTheme
 import com.google.firebase.FirebaseApp
 import androidx.compose.ui.platform.LocalContext
 import com.example.ynovente.ui.screens.register.RegisterScreen
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -26,6 +30,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         FirebaseApp.initializeApp(this)
+
+        // *** AJOUT ***
+        // Demande la permission POST_NOTIFICATIONS dès le lancement si besoin (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                val requestPermissionLauncher =
+                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                        // Optionnel : tu peux afficher un toast ou log ici
+                    }
+                requestPermissionLauncher.launch(permission)
+            }
+        }
+        // *** FIN AJOUT ***
+
         setContent {
             YnoventeTheme {
                 val rootNavController = rememberNavController()

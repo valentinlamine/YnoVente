@@ -6,6 +6,8 @@ import com.example.ynovente.data.repository.FirebaseAuthRepository
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 
 class LoginViewModel(
     private val authRepository: FirebaseAuthRepository
@@ -15,6 +17,13 @@ class LoginViewModel(
     fun login(email: String, password: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = authRepository.login(email, password)
+            if (result) {
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    val token = FirebaseMessaging.getInstance().token.await()
+                    authRepository.saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: email, token)
+                }
+            }
             onResult(result)
         }
     }
