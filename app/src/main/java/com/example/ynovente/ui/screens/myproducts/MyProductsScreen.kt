@@ -2,6 +2,7 @@ package com.example.ynovente.ui.screens.myproducts
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,14 +14,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ynovente.data.model.Offer
-import com.example.ynovente.data.model.User
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.core.net.toUri
 
 enum class MyProductsFilterType { DATE, PRICE, NAME }
 
@@ -32,17 +35,19 @@ fun MyProductsScreen(
     innerPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: MyProductsViewModel
 ) {
-    val myOffers by viewModel.myOffers.collectAsState()
+    val finishedOffersWithWinner by viewModel.finishedOffersWithWinner.collectAsState()
+    val activeOffers by viewModel.activeOffers.collectAsState()
     var filter by remember { mutableStateOf(MyProductsFilterType.DATE) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
 
-    val sortedOffers = remember(myOffers, filter) {
+    val sortedActiveOffers = remember(activeOffers, filter) {
         when (filter) {
-            MyProductsFilterType.DATE -> myOffers.sortedBy { it.endDate }
-            MyProductsFilterType.PRICE -> myOffers.sortedBy { it.price }
-            MyProductsFilterType.NAME -> myOffers.sortedBy { it.title }
+            MyProductsFilterType.DATE -> activeOffers.sortedBy { it.endDate }
+            MyProductsFilterType.PRICE -> activeOffers.sortedBy { it.price }
+            MyProductsFilterType.NAME -> activeOffers.sortedBy { it.title }
         }
     }
+    val sortedFinishedOffersWithWinner = remember(finishedOffersWithWinner) { finishedOffersWithWinner.sortedByDescending { it.offer.endDate } }
 
     Scaffold(
         topBar = {
@@ -92,7 +97,7 @@ fun MyProductsScreen(
             }
         }
     ) { paddingValues ->
-        if (sortedOffers.isEmpty()) {
+        if (sortedActiveOffers.isEmpty() && sortedFinishedOffersWithWinner.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -112,13 +117,44 @@ fun MyProductsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 16.dp, top = 8.dp)
             ) {
-                items(sortedOffers) { offer ->
-                    MyProductCard(
-                        offer = offer,
-                        onClick = {
-                            navController.navigate("offerDetail/${offer.id}")
-                        }
-                    )
+                if (sortedFinishedOffersWithWinner.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Enchères terminées",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = Color(0xFF388E3C),
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
+                        )
+                    }
+                    items(sortedFinishedOffersWithWinner) { display ->
+                        MyProductCard(
+                            offer = display.offer,
+                            onClick = { navController.navigate("offerDetail/${display.offer.id}") },
+                            isFinished = true,
+                            winnerEmail = display.winnerEmail
+                        )
+                    }
+                }
+                if (sortedActiveOffers.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Enchères en cours",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
+                    items(sortedActiveOffers) { offer ->
+                        MyProductCard(
+                            offer = offer,
+                            onClick = { navController.navigate("offerDetail/${offer.id}") },
+                            isFinished = false,
+                            winnerEmail = null
+                        )
+                    }
                 }
             }
         }
@@ -129,7 +165,9 @@ fun MyProductsScreen(
 @Composable
 fun MyProductCard(
     offer: Offer,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isFinished: Boolean = false,
+    winnerEmail: String? = null
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
     val formattedEndDate = try {
@@ -138,22 +176,28 @@ fun MyProductCard(
     } catch (e: Exception) {
         offer.endDate
     }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
+            .then(
+                if (isFinished) Modifier.background(Color(0xFFB9F6CA)) else Modifier // Vert clair
+            )
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (isFinished) Color(0xFFB9F6CA) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(4.dp),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Titre sur une ligne, plus de bouton à droite
             Text(
                 offer.title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
             )
             Spacer(Modifier.height(4.dp))
             Text(

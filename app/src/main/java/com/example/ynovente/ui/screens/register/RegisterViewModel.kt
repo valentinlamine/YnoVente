@@ -21,6 +21,11 @@ class RegisterViewModel(
             val result = authRepository.register(email, password)
             if (result) {
                 authRepository.updateProfileName(name)
+                // Ajout ici : sauvegarde dans la database
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    authRepository.saveUserToDatabase(user.uid, name, user.email ?: email)
+                }
                 onSuccess()
             } else {
                 onError("Erreur lors de la création du compte")
@@ -36,6 +41,16 @@ class RegisterViewModel(
     fun firebaseAuthWithGoogle(idToken: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = authRepository.loginWithGoogle(idToken)
+            if (result) {
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    authRepository.saveUserToDatabase(
+                        user.uid,
+                        user.displayName ?: "",
+                        user.email ?: ""
+                    )
+                }
+            }
             onResult(result)
         }
     }

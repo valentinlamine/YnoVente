@@ -12,6 +12,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.database.FirebaseDatabase
 
 class FirebaseAuthRepository(
     private val activity: Activity
@@ -31,6 +32,10 @@ class FirebaseAuthRepository(
     suspend fun login(email: String, password: String): Boolean = try {
         auth.signInWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
+        // Synchronisation de l'utilisateur à chaque connexion
+        auth.currentUser?.let { user ->
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+        }
         true
     } catch (e: Exception) {
         false
@@ -39,6 +44,10 @@ class FirebaseAuthRepository(
     suspend fun register(email: String, password: String): Boolean = try {
         auth.createUserWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
+        // Synchronisation de l'utilisateur à chaque inscription
+        auth.currentUser?.let { user ->
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+        }
         true
     } catch (e: Exception) {
         false
@@ -51,12 +60,29 @@ class FirebaseAuthRepository(
                 .setDisplayName(name)
                 .build()
         )?.await()
+        // Synchronisation du nom dans la base
+        user?.let {
+            saveUserToDatabase(it.uid, name, it.email ?: "")
+        }
+    }
+
+    suspend fun updateProfileEmail(newEmail: String) {
+        val user = auth.currentUser
+        user?.updateEmail(newEmail)?.await()
+        // Synchronisation de l'email dans la base
+        user?.let {
+            saveUserToDatabase(it.uid, it.displayName ?: "", newEmail)
+        }
     }
 
     suspend fun loginWithGoogle(idToken: String): Boolean = try {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential).await()
         _isLoggedIn.value = auth.currentUser != null
+        // Synchronisation de l'utilisateur à chaque connexion Google
+        auth.currentUser?.let { user ->
+            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "")
+        }
         true
     } catch (e: Exception) {
         false
@@ -67,7 +93,6 @@ class FirebaseAuthRepository(
         _isLoggedIn.value = false
     }
 
-    // Ajout : fonction de ré-authentification (peut servir ailleurs)
     suspend fun reauthenticate(email: String, password: String): Boolean = try {
         val user = auth.currentUser
         if (user != null) {
@@ -79,5 +104,19 @@ class FirebaseAuthRepository(
         }
     } catch (e: Exception) {
         false
+    }
+
+    fun getCurrentUser(): FirebaseUser? {
+        return auth.currentUser
+    }
+
+    suspend fun saveUserToDatabase(uid: String, name: String, email: String) {
+        val usersRef = FirebaseDatabase.getInstance().getReference("users")
+        val userMap = mapOf(
+            "uid" to uid,
+            "name" to name,
+            "email" to email
+        )
+        usersRef.child(uid).setValue(userMap).await()
     }
 }

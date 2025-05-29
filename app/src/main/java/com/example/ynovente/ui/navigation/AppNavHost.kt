@@ -12,6 +12,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.ynovente.data.repository.FirebaseOfferRepository
+import com.example.ynovente.data.repository.FirebaseUserRepository
 import com.example.ynovente.ui.screens.home.HomeScreen
 import com.example.ynovente.ui.screens.home.OfferDetailScreen
 import com.example.ynovente.ui.screens.myproducts.CreateOfferScreen
@@ -28,6 +29,7 @@ fun AppNavHost(
     onLogout: () -> Unit
 ) {
     val firebaseOfferRepository = remember { FirebaseOfferRepository() }
+    val firebaseUserRepository = remember { FirebaseUserRepository() }
 
     NavHost(
         navController = navController,
@@ -36,7 +38,7 @@ fun AppNavHost(
     ) {
         composable("home") { HomeScreen(navController, firebaseOfferRepository) }
         composable("products") {
-            val viewModel = remember { MyProductsViewModel(firebaseOfferRepository) }
+            val viewModel = remember { MyProductsViewModel(firebaseOfferRepository, firebaseUserRepository) }
             MyProductsScreen(
                 navController = navController,
                 viewModel = viewModel

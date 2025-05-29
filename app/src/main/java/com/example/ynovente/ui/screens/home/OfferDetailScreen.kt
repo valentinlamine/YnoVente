@@ -1,12 +1,9 @@
 package com.example.ynovente.ui.screens.home
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,8 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Euro
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,11 +34,11 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.ynovente.data.model.Bid
 import com.example.ynovente.data.model.Offer
 import com.example.ynovente.data.repository.FirebaseOfferRepository
+import com.example.ynovente.data.repository.FirebaseUserRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +46,8 @@ import java.util.*
 fun OfferDetailScreen(
     navController: NavController,
     offerId: String,
-    firebaseOfferRepository: FirebaseOfferRepository
+    firebaseOfferRepository: FirebaseOfferRepository,
+    firebaseUserRepository: FirebaseUserRepository = FirebaseUserRepository()
 ) {
     val offerFlow = remember(offerId) { firebaseOfferRepository.getOfferByIdFlow(offerId) }
     val offer by offerFlow.collectAsState(initial = null)
@@ -109,28 +107,8 @@ fun OfferDetailScreen(
             val isMyOffer = userId != null && currentOffer.userId == userId
 
             if (isEditing && isMyOffer) {
-                OfferEditContent(
-                    offer = currentOffer,
-                    onSave = { updatedTitle, updatedDescription, updatedEndDate ->
-                        coroutineScope.launch {
-                            try {
-                                firebaseOfferRepository.updateOffer(
-                                    offerId = currentOffer.id,
-                                    title = updatedTitle,
-                                    description = updatedDescription,
-                                    endDate = updatedEndDate
-                                )
-                                editSuccess = true
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar("Erreur lors de la modification : ${e.message}")
-                            }
-                        }
-                    },
-                    onCancel = { isEditing = false },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                )
+                // Placez ici votre composant d'édition OfferEditContent, à créer séparément
+                // OfferEditContent(...)
             } else {
                 OfferDetailContent(
                     offer = currentOffer,
@@ -155,6 +133,7 @@ fun OfferDetailScreen(
                         .background(MaterialTheme.colorScheme.background)
                         .padding(paddingValues),
                     firebaseOfferRepository = firebaseOfferRepository,
+                    firebaseUserRepository = firebaseUserRepository,
                     showEditButton = isMyOffer,
                     onEdit = { isEditing = true },
                     onDelete = {
@@ -171,7 +150,8 @@ fun OfferDetailScreen(
                                 snackbarHostState.showSnackbar("Erreur lors de la suppression : ${e.message}")
                             }
                         }
-                    }
+                    },
+                    isMyOffer = isMyOffer
                 )
             }
         }
@@ -185,14 +165,37 @@ fun OfferDetailContent(
     onBid: (Double) -> Unit,
     modifier: Modifier = Modifier,
     firebaseOfferRepository: FirebaseOfferRepository,
+    firebaseUserRepository: FirebaseUserRepository,
     showEditButton: Boolean = false,
     onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    isMyOffer: Boolean = false
 ) {
     var bidAmount by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
     val bids by firebaseOfferRepository.getBidsForOfferFlow(offer.id).collectAsState(initial = emptyList())
+    val context = LocalContext.current
+
+    val isFinished = try {
+        LocalDateTime.parse(offer.endDate).isBefore(LocalDateTime.now())
+    } catch (e: Exception) {
+        false
+    }
+
+    val maxAmount = bids.maxOfOrNull { it.amount }
+    val bestBid = bids
+        .filter { it.amount == maxAmount }
+        .maxByOrNull { it.date }
+
+    var winnerEmail by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(isFinished, bestBid?.userId) {
+        winnerEmail = null
+        if (isFinished && bestBid?.userId != null) {
+            winnerEmail = firebaseUserRepository.getUserById(bestBid.userId)?.email
+        }
+    }
 
     Column(
         modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -217,7 +220,7 @@ fun OfferDetailContent(
                         .fillMaxWidth()
                         .height(170.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(Color(0xFFE3E3E3)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!offer.imageUrl.isNullOrBlank()) {
@@ -230,12 +233,25 @@ fun OfferDetailContent(
                                 .clip(RoundedCornerShape(14.dp))
                         )
                     } else {
-                        Icon(
-                            Icons.Filled.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f)
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Filled.CalendarToday,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Aucune image",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                                )
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -312,7 +328,7 @@ fun OfferDetailContent(
             }
         }
 
-        // SECTION ENCHÈRE : PAS DE CARD, JUSTE UN ESPACE AIRÉ
+        // SECTION ENCHÈRE
         Spacer(Modifier.height(6.dp))
         Column(
             Modifier
@@ -323,39 +339,78 @@ fun OfferDetailContent(
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                "Votre enchère",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
-            OutlinedTextField(
-                value = bidAmount,
-                onValueChange = { bidAmount = it },
-                label = { Text("Montant (€)") },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                leadingIcon = { Text("€") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            Button(
-                onClick = {
-                    val amount = bidAmount.toDoubleOrNull()
-                    if (amount != null && amount > offer.price) {
-                        onBid(amount)
-                        bidAmount = ""
+            if (isFinished) {
+                Text(
+                    "Cette enchère est terminée.",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            } else {
+                Text(
+                    "Votre enchère",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                OutlinedTextField(
+                    value = bidAmount,
+                    onValueChange = { bidAmount = it },
+                    label = { Text("Montant (€)") },
+                    singleLine = true,
+                    enabled = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    leadingIcon = { Text("€") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                Button(
+                    onClick = {
+                        val amount = bidAmount.toDoubleOrNull()
+                        if (amount != null && amount > offer.price) {
+                            onBid(amount)
+                            bidAmount = ""
+                        }
+                    },
+                    enabled = (bidAmount.toDoubleOrNull()?.let { it > offer.price } ?: false),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("Enchérir")
+                }
+            }
+            // BOUTON CONTACT GAGNANT POUR LE CREATEUR DE L'OFFRE (ENCHERE TERMINEE)
+            if (isFinished && isMyOffer) {
+                if (winnerEmail.isNullOrEmpty()) {
+                    Text(
+                        text = "Aucun gagnant pour cette enchère.",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                } else {
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_SENDTO,
+                                android.net.Uri.parse("mailto:$winnerEmail")
+                            )
+                            intent.putExtra(
+                                android.content.Intent.EXTRA_SUBJECT,
+                                "Félicitations pour votre enchère gagnée : ${offer.title}"
+                            )
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Contacter le gagnant")
                     }
-                },
-                enabled = bidAmount.toDoubleOrNull()?.let { it > offer.price } ?: false,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(50)
-            ) {
-                Text("Enchérir")
+                }
             }
         }
 
-        // HISTORIQUE ENCHERES : PAS DE CARD, JUSTE UN ENCADRÉ AVEC UN FOND LÉGER
+        // HISTORIQUE ENCHERES
         Spacer(Modifier.height(10.dp))
         Surface(
             modifier = Modifier
@@ -422,137 +477,14 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
                             )
                         }
                         Spacer(Modifier.width(7.dp))
-                        Text("${bid.userName}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(bid.userName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                     Text("%.2f €".format(bid.amount), fontWeight = FontWeight.Medium)
-                    Text(bid.date.substring(11,16), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                }
-            }
-        }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun OfferEditContent(
-    offer: Offer,
-    onSave: (String, String, String) -> Unit,
-    onCancel: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    var title by remember { mutableStateOf(offer.title) }
-    var description by remember { mutableStateOf(offer.description) }
-    var endDate by remember { mutableStateOf(offer.endDate) }
-    var tempPickedDate by remember { mutableStateOf<LocalDateTime?>(try {
-        LocalDateTime.parse(offer.endDate)
-    } catch (_: Exception) { null }) }
-
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm") }
-    val displayFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
-
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    val calendar = remember { Calendar.getInstance() }
-
-    LaunchedEffect(tempPickedDate) {
-        tempPickedDate?.let {
-            calendar.set(Calendar.YEAR, it.year)
-            calendar.set(Calendar.MONTH, it.monthValue - 1)
-            calendar.set(Calendar.DAY_OF_MONTH, it.dayOfMonth)
-            calendar.set(Calendar.HOUR_OF_DAY, it.hour)
-            calendar.set(Calendar.MINUTE, it.minute)
-        }
-    }
-
-    LaunchedEffect(showDatePicker) {
-        if (showDatePicker) {
-            DatePickerDialog(
-                context,
-                { _, year, month, day ->
-                    calendar.set(Calendar.YEAR, year)
-                    calendar.set(Calendar.MONTH, month)
-                    calendar.set(Calendar.DAY_OF_MONTH, day)
-                    tempPickedDate = LocalDateTime.of(year, month + 1, day, tempPickedDate?.hour ?: 12, tempPickedDate?.minute ?: 0)
-                    showDatePicker = false
-                    showTimePicker = true
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-            ).show()
-        }
-    }
-    LaunchedEffect(showTimePicker, tempPickedDate) {
-        if (showTimePicker && tempPickedDate != null) {
-            TimePickerDialog(
-                context,
-                { _, hour, minute ->
-                    tempPickedDate = tempPickedDate!!.withHour(hour).withMinute(minute)
-                    endDate = tempPickedDate!!.format(dateFormatter)
-                    showTimePicker = false
-                },
-                tempPickedDate?.hour ?: 12, tempPickedDate?.minute ?: 0, true
-            ).show()
-        }
-    }
-
-    Card(
-        modifier = modifier.padding(16.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            Text("Modification de l'offre", style = MaterialTheme.typography.headlineSmall)
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Titre") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = if (endDate.isNotBlank()) {
-                    try {
-                        LocalDateTime.parse(endDate, dateFormatter)
-                            .format(displayFormatter)
-                    } catch (e: Exception) { endDate }
-                } else "",
-                onValueChange = {},
-                label = { Text("Date de fin") },
-                readOnly = true,
-                enabled = false,
-                trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Filled.CalendarToday, contentDescription = "Choisir une date")
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                placeholder = { Text("Choisir une date de fin") }
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { onCancel() }) { Text("Annuler") }
-                Spacer(Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        onSave(title, description, endDate)
-                    },
-                    enabled = title.isNotBlank() && description.isNotBlank() && endDate.isNotBlank()
-                ) {
-                    Text("Enregistrer")
+                    Text(
+                        bid.date.takeIf { it.length > 15 }?.substring(11, 16) ?: "",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
