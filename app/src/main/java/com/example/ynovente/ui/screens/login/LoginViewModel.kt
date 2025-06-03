@@ -2,6 +2,7 @@ package com.example.ynovente.ui.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ynovente.data.repository.AuthResult
 import com.example.ynovente.data.repository.FirebaseAuthRepository
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,10 +15,10 @@ class LoginViewModel(
 ) : ViewModel() {
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn
 
-    fun login(email: String, password: String, onResult: (Boolean) -> Unit) {
+    fun login(email: String, password: String, onResult: (AuthResult) -> Unit) {
         viewModelScope.launch {
             val result = authRepository.login(email, password)
-            if (result) {
+            if (result.success) {
                 val user = authRepository.getCurrentUser()
                 if (user != null) {
                     val token = FirebaseMessaging.getInstance().token.await()
@@ -32,7 +33,7 @@ class LoginViewModel(
         return authRepository.getGoogleSignInClient()
     }
 
-    fun firebaseAuthWithGoogle(idToken: String, onResult: (Boolean) -> Unit) {
+    fun firebaseAuthWithGoogle(idToken: String, onResult: (AuthResult) -> Unit) {
         viewModelScope.launch {
             val result = authRepository.loginWithGoogle(idToken)
             onResult(result)

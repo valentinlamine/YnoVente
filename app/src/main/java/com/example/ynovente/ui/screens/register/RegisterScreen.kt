@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.ynovente.data.repository.AuthResult
 import com.example.ynovente.data.repository.FirebaseAuthRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
@@ -42,11 +43,11 @@ fun RegisterScreen(
             val account = task.getResult(ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
-                viewModel.firebaseAuthWithGoogle(idToken) { success ->
-                    if (success) {
+                viewModel.firebaseAuthWithGoogle(idToken) { authResult: AuthResult ->
+                    if (authResult.success) {
                         onRegisterSuccess()
                     } else {
-                        error = "Erreur lors de la création du compte Google"
+                        error = authResult.errorMessage ?: "Erreur lors de la création du compte Google"
                     }
                 }
             } else {
@@ -56,6 +57,7 @@ fun RegisterScreen(
             error = "Erreur Google SignIn : ${e.localizedMessage}"
         }
     }
+
 
     Column(modifier = Modifier.padding(32.dp)) {
         Text(text = "Créer un compte", style = MaterialTheme.typography.headlineMedium)

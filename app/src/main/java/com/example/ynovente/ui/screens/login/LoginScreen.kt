@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import com.example.ynovente.data.repository.AuthResult
 
 @Composable
 fun LoginScreen(
@@ -38,8 +39,10 @@ fun LoginScreen(
             val account = task.getResult(ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
-                viewModel.firebaseAuthWithGoogle(idToken) { success ->
-                    if (!success) error = "Erreur lors de la connexion Google"
+                viewModel.firebaseAuthWithGoogle(idToken) { authResult: AuthResult ->
+                    if (!authResult.success) {
+                        error = authResult.errorMessage ?: "Erreur lors de la connexion Google"
+                    }
                 }
             } else {
                 error = "Impossible de récupérer le token Google"
@@ -84,8 +87,11 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
-                viewModel.login(email, password) { success ->
-                    if (!success) error = "Login invalide"
+                error = null
+                viewModel.login(email, password) { authResult: AuthResult ->
+                    if (!authResult.success) {
+                        error = authResult.errorMessage ?: "Login invalide"
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()

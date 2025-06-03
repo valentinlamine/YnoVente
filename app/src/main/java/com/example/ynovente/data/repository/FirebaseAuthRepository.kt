@@ -16,6 +16,11 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.messaging.FirebaseMessaging
 
+data class AuthResult(
+    val success: Boolean,
+    val errorMessage: String? = null
+)
+
 class FirebaseAuthRepository(
     private val activity: Activity
 ) {
@@ -40,7 +45,7 @@ class FirebaseAuthRepository(
         return GoogleSignIn.getClient(activity, gso)
     }
 
-    suspend fun login(email: String, password: String): Boolean = try {
+    suspend fun login(email: String, password: String): AuthResult = try {
         Log.d("DEBUG_AUTH", "Tentative login email: $email")
         auth.signInWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
@@ -48,13 +53,13 @@ class FirebaseAuthRepository(
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
-        true
+        AuthResult(success = true)
     } catch (e: Exception) {
         Log.e("DEBUG_AUTH", "Erreur login email/password", e)
-        false
+        AuthResult(success = false, errorMessage = e.localizedMessage ?: "Erreur inconnue")
     }
 
-    suspend fun register(email: String, password: String): Boolean = try {
+    suspend fun register(email: String, password: String): AuthResult = try {
         Log.d("DEBUG_AUTH", "Tentative register email: $email")
         auth.createUserWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
@@ -62,10 +67,10 @@ class FirebaseAuthRepository(
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
-        true
+        AuthResult(success = true)
     } catch (e: Exception) {
         Log.e("DEBUG_AUTH", "Erreur register", e)
-        false
+        AuthResult(success = false, errorMessage = e.localizedMessage ?: "Erreur inconnue")
     }
 
     suspend fun updateProfileName(name: String) {
@@ -92,26 +97,26 @@ class FirebaseAuthRepository(
         }
     }
 
-    suspend fun loginWithGoogle(idToken: String): Boolean {
+    suspend fun loginWithGoogle(idToken: String): AuthResult {
         Log.d("DEBUG_AUTH", "Début loginWithGoogle avec idToken: $idToken")
         if (idToken.isBlank()) {
             Log.e("DEBUG_AUTH", "idToken est vide ou null !")
-            return false
+            return AuthResult(success = false, errorMessage = "idToken vide ou null")
         }
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             Log.d("DEBUG_AUTH", "Création credential OK")
-            val authResult = auth.signInWithCredential(credential).await()
+            auth.signInWithCredential(credential).await()
             Log.d("DEBUG_AUTH", "SignInWithCredential OK, user: ${auth.currentUser?.uid}")
             _isLoggedIn.value = auth.currentUser != null
             auth.currentUser?.let { user ->
                 val token = FirebaseMessaging.getInstance().token.await()
                 saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
             }
-            true
+            AuthResult(success = true)
         } catch (e: Exception) {
             Log.e("DEBUG_AUTH", "Erreur loginWithGoogle", e)
-            false
+            AuthResult(success = false, errorMessage = e.localizedMessage ?: "Erreur inconnue")
         }
     }
 
