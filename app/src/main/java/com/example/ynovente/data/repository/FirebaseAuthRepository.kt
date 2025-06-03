@@ -116,16 +116,13 @@ class FirebaseAuthRepository(
         return auth.currentUser
     }
 
-    // Ajout de la gestion du champ admin, qui reste inchangé sauf si dashboard web modifie ce champ
+    // Modifiée pour accepter le token FCM (déjà fait)
     suspend fun saveUserToDatabase(uid: String, name: String, email: String, fcmToken: String? = null) {
         val usersRef = FirebaseDatabase.getInstance().getReference("users")
-        val currentSnapshot = usersRef.child(uid).get().await()
-        val currentAdmin = currentSnapshot.child("admin").getValue(Boolean::class.java) ?: false
         val userMap = mutableMapOf(
             "uid" to uid,
             "name" to name,
-            "email" to email,
-            "admin" to currentAdmin // garde la valeur si déjà admin, sinon false
+            "email" to email
         )
         fcmToken?.let { userMap["fcmToken"] = it }
         usersRef.child(uid).setValue(userMap).await()
