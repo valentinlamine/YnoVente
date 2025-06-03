@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1070335553426-gmrnbafqo4l8tc7ngsukprr5lh5184se.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ynovente",
+            "certificate_hash": "4ba37649f61b537bb6241f4635762bf9f67b6b29"
+          }
+        },
+        {
           "client_id": "1070335553426-kcm84kc363b2ll3kvsoi56g1p7p9u5kd.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
