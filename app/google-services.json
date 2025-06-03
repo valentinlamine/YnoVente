@@ -8,7 +8,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1070335553426:android:7a9d9d84dc148e7e975b4b",
+        "mobilesdk_app_id": "1:1070335553426:android:247d5c992d65c60a975b4b",
         "android_client_info": {
           "package_name": "com.example.ynovente"
         }
@@ -20,14 +20,6 @@
           "android_info": {
             "package_name": "com.example.ynovente",
             "certificate_hash": "4ba37649f61b537bb6241f4635762bf9f67b6b29"
-          }
-        },
-        {
-          "client_id": "1070335553426-kcm84kc363b2ll3kvsoi56g1p7p9u5kd.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.ynovente",
-            "certificate_hash": "5f3abc6e0923e2891b979758c1e96f925e3193ec"
           }
         },
         {
