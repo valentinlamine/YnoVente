@@ -23,9 +23,18 @@ class FirebaseAuthRepository(
     private val _isLoggedIn = MutableStateFlow(auth.currentUser != null)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
 
+    // Modifie ici ton client ID pour le debug et vérifie qu'il est bien celui avec SHA-1 debug
+    private val GOOGLE_CLIENT_ID_DEBUG = "1070335553426-gmrnbafqo4l8tc7ngsukprr5lh5184se.apps.googleusercontent.com"
+
     fun getGoogleSignInClient(): GoogleSignInClient {
+        Log.d("DEBUG_AUTH", "Création GoogleSignInClient avec clientId: $GOOGLE_CLIENT_ID_DEBUG")
+
+        if (GOOGLE_CLIENT_ID_DEBUG.isBlank() || !GOOGLE_CLIENT_ID_DEBUG.contains("apps.googleusercontent.com")) {
+            Log.e("DEBUG_AUTH", "Client ID Google mal configuré dans FirebaseAuthRepository !")
+        }
+
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("1070335553426-3alq5pqf186ofia79mcnv9gguha3iujb.apps.googleusercontent.com")
+            .requestIdToken(GOOGLE_CLIENT_ID_DEBUG)
             .requestEmail()
             .build()
         return GoogleSignIn.getClient(activity, gso)
@@ -84,26 +93,28 @@ class FirebaseAuthRepository(
     }
 
     suspend fun loginWithGoogle(idToken: String): Boolean {
+        Log.d("DEBUG_AUTH", "Début loginWithGoogle avec idToken: $idToken")
+        if (idToken.isBlank()) {
+            Log.e("DEBUG_AUTH", "idToken est vide ou null !")
+            return false
+        }
         return try {
-            Log.d("DEBUG_AUTH", "Tentative loginWithGoogle avec idToken: $idToken")
-            if (idToken.isBlank()) {
-                Log.e("DEBUG_AUTH", "idToken reçu est vide ou null ! Problème de config client_id/SHA1 ?")
-                return false
-            }
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-            auth.signInWithCredential(credential).await()
+            Log.d("DEBUG_AUTH", "Création credential OK")
+            val authResult = auth.signInWithCredential(credential).await()
+            Log.d("DEBUG_AUTH", "SignInWithCredential OK, user: ${auth.currentUser?.uid}")
             _isLoggedIn.value = auth.currentUser != null
             auth.currentUser?.let { user ->
                 val token = FirebaseMessaging.getInstance().token.await()
                 saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
             }
-            Log.d("DEBUG_AUTH", "loginWithGoogle OK pour user: ${auth.currentUser?.uid}")
             true
         } catch (e: Exception) {
             Log.e("DEBUG_AUTH", "Erreur loginWithGoogle", e)
             false
         }
     }
+
 
     fun logout() {
         Log.d("DEBUG_AUTH", "Déconnexion utilisateur")
