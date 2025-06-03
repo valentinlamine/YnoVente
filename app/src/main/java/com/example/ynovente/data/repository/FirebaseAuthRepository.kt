@@ -24,7 +24,7 @@ class FirebaseAuthRepository(
 
     fun getGoogleSignInClient(): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("1070335553426-kcm84kc363b2ll3kvsoi56g1p7p9u5kd.apps.googleusercontent.com")
+            .requestIdToken("1070335553426-gmrnbafqo4l8tc7ngsukprr5lh5184se.apps.googleusercontent.com")
             .requestEmail()
             .build()
         return GoogleSignIn.getClient(activity, gso)
