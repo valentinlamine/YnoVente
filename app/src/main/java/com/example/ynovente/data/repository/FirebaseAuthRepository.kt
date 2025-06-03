@@ -1,6 +1,7 @@
 package com.example.ynovente.data.repository
 
 import android.app.Activity
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
@@ -31,39 +32,41 @@ class FirebaseAuthRepository(
     }
 
     suspend fun login(email: String, password: String): Boolean = try {
+        Log.d("DEBUG_AUTH", "Tentative login email: $email")
         auth.signInWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque connexion avec le token FCM
         auth.currentUser?.let { user ->
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
         true
     } catch (e: Exception) {
+        Log.e("DEBUG_AUTH", "Erreur login email/password", e)
         false
     }
 
     suspend fun register(email: String, password: String): Boolean = try {
+        Log.d("DEBUG_AUTH", "Tentative register email: $email")
         auth.createUserWithEmailAndPassword(email, password).await()
         _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque inscription avec le token FCM
         auth.currentUser?.let { user ->
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
         }
         true
     } catch (e: Exception) {
+        Log.e("DEBUG_AUTH", "Erreur register", e)
         false
     }
 
     suspend fun updateProfileName(name: String) {
         val user = auth.currentUser
+        Log.d("DEBUG_AUTH", "Mise à jour du nom: $name pour user: ${user?.uid}")
         user?.updateProfile(
             UserProfileChangeRequest.Builder()
                 .setDisplayName(name)
                 .build()
         )?.await()
-        // Synchronisation du nom dans la base avec le token FCM
         user?.let {
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(it.uid, name, it.email ?: "", token)
@@ -72,35 +75,45 @@ class FirebaseAuthRepository(
 
     suspend fun updateProfileEmail(newEmail: String) {
         val user = auth.currentUser
+        Log.d("DEBUG_AUTH", "Mise à jour de l'email: $newEmail pour user: ${user?.uid}")
         user?.updateEmail(newEmail)?.await()
-        // Synchronisation de l'email dans la base avec le token FCM
         user?.let {
             val token = FirebaseMessaging.getInstance().token.await()
             saveUserToDatabase(it.uid, it.displayName ?: "", newEmail, token)
         }
     }
 
-    suspend fun loginWithGoogle(idToken: String): Boolean = try {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential).await()
-        _isLoggedIn.value = auth.currentUser != null
-        // Synchronisation de l'utilisateur à chaque connexion Google avec le token FCM
-        auth.currentUser?.let { user ->
-            val token = FirebaseMessaging.getInstance().token.await()
-            saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
+    suspend fun loginWithGoogle(idToken: String): Boolean {
+        return try {
+            Log.d("DEBUG_AUTH", "Tentative loginWithGoogle avec idToken: $idToken")
+            if (idToken.isBlank()) {
+                Log.e("DEBUG_AUTH", "idToken reçu est vide ou null ! Problème de config client_id/SHA1 ?")
+                return false
+            }
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credential).await()
+            _isLoggedIn.value = auth.currentUser != null
+            auth.currentUser?.let { user ->
+                val token = FirebaseMessaging.getInstance().token.await()
+                saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
+            }
+            Log.d("DEBUG_AUTH", "loginWithGoogle OK pour user: ${auth.currentUser?.uid}")
+            true
+        } catch (e: Exception) {
+            Log.e("DEBUG_AUTH", "Erreur loginWithGoogle", e)
+            false
         }
-        true
-    } catch (e: Exception) {
-        false
     }
 
     fun logout() {
+        Log.d("DEBUG_AUTH", "Déconnexion utilisateur")
         auth.signOut()
         _isLoggedIn.value = false
     }
 
     suspend fun reauthenticate(email: String, password: String): Boolean = try {
         val user = auth.currentUser
+        Log.d("DEBUG_AUTH", "Re-authentification pour user: ${user?.uid} avec email: $email")
         if (user != null) {
             val credential = EmailAuthProvider.getCredential(email, password)
             user.reauthenticate(credential).await()
@@ -109,6 +122,7 @@ class FirebaseAuthRepository(
             false
         }
     } catch (e: Exception) {
+        Log.e("DEBUG_AUTH", "Erreur reauthenticate", e)
         false
     }
 
@@ -116,16 +130,13 @@ class FirebaseAuthRepository(
         return auth.currentUser
     }
 
-    // Ajout de la gestion du champ admin, qui reste inchangé sauf si dashboard web modifie ce champ
     suspend fun saveUserToDatabase(uid: String, name: String, email: String, fcmToken: String? = null) {
+        Log.d("DEBUG_AUTH", "Sauvegarde user en base: uid=$uid, name=$name, email=$email, fcmToken=$fcmToken")
         val usersRef = FirebaseDatabase.getInstance().getReference("users")
-        val currentSnapshot = usersRef.child(uid).get().await()
-        val currentAdmin = currentSnapshot.child("admin").getValue(Boolean::class.java) ?: false
         val userMap = mutableMapOf(
             "uid" to uid,
             "name" to name,
-            "email" to email,
-            "admin" to currentAdmin // garde la valeur si déjà admin, sinon false
+            "email" to email
         )
         fcmToken?.let { userMap["fcmToken"] = it }
         usersRef.child(uid).setValue(userMap).await()
