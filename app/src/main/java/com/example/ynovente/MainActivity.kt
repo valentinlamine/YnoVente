@@ -9,8 +9,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -20,73 +26,103 @@ import com.example.ynovente.ui.screens.login.LoginViewModel
 import com.example.ynovente.data.repository.FirebaseAuthRepository
 import com.example.ynovente.ui.theme.YnoventeTheme
 import com.google.firebase.FirebaseApp
-import androidx.compose.ui.platform.LocalContext
 import com.example.ynovente.ui.screens.register.RegisterScreen
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Configuration du edge-to-edge
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
+
         FirebaseApp.initializeApp(this)
 
-        // *** AJOUT ***
-        // Demande la permission POST_NOTIFICATIONS dès le lancement si besoin (Android 13+)
+        // Demande la permission POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
                 val requestPermissionLauncher =
-                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                        // Optionnel : tu peux afficher un toast ou log ici
-                    }
+                    registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ -> }
                 requestPermissionLauncher.launch(permission)
             }
         }
-        // *** FIN AJOUT ***
 
         setContent {
             YnoventeTheme {
-                val rootNavController = rememberNavController()
-                NavHost(rootNavController, startDestination = "login") {
-                    composable("login") {
-                        // -- INJECTION MANUELLE DU VIEWMODEL --
-                        val activity = this@MainActivity
-                        val loginViewModel = remember {
-                            LoginViewModel(FirebaseAuthRepository(activity))
-                        }
-                        LoginScreen(
-                            onLoginSuccess = {
-                                rootNavController.navigate("main") {
-                                    popUpTo("login") { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            },
-                            navController = rootNavController,
-                            viewModel = loginViewModel
-                        )
+                // Gestion des barres système
+                val view = LocalView.current
+                val isDarkTheme = isSystemInDarkTheme()
+
+                if (!view.isInEditMode) {
+                    SideEffect {
+                        val window = (view.context as MainActivity).window
+                        val windowController = WindowCompat.getInsetsController(window, view)
+
+                        // Configuration des couleurs des barres système
+                        window.statusBarColor = android.graphics.Color.TRANSPARENT
+                        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+                        // Configuration de l'apparence des icônes (claires ou sombres)
+                        windowController.isAppearanceLightStatusBars = !isDarkTheme
+                        windowController.isAppearanceLightNavigationBars = !isDarkTheme
                     }
-                    composable("register") {
-                        RegisterScreen(
-                            onRegisterSuccess = {
-                                rootNavController.navigate("main") {
-                                    popUpTo("login") { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            },
-                            navController = rootNavController
-                        )
-                    }
-                    composable("main") {
-                        MainScreenWithBottomNav(onLogout = {
-                            rootNavController.navigate("login") {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
+                }
+
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val rootNavController = rememberNavController()
+                    NavHost(rootNavController, startDestination = "login") {
+                        composable("login") {
+                            val loginViewModel = remember {
+                                LoginViewModel(FirebaseAuthRepository(this@MainActivity))
                             }
-                        })
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    rootNavController.navigate("main") {
+                                        popUpTo("login") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                },
+                                navController = rootNavController,
+                                viewModel = loginViewModel
+                            )
+                        }
+                        composable("register") {
+                            RegisterScreen(
+                                onRegisterSuccess = {
+                                    rootNavController.navigate("main") {
+                                        popUpTo("login") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                },
+                                navController = rootNavController
+                            )
+                        }
+                        composable("main") {
+                            MainScreenWithBottomNav(onLogout = {
+                                rootNavController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            })
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun isSystemInDarkTheme(): Boolean {
+    val configuration = LocalConfiguration.current
+    return when (configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) {
+        android.content.res.Configuration.UI_MODE_NIGHT_YES -> true
+        else -> false
     }
 }
