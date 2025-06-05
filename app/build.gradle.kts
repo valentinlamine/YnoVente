@@ -37,6 +37,19 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    // Add compose options for proper Kotlin compiler compatibility
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.1"
+    }
+
+    // Add packaging options to avoid conflicts
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 
@@ -68,4 +81,26 @@ dependencies {
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging:24.1.1")
+
+    // Make sure you have these versions
+    val playServicesAuthVersion = "21.3.0"
+    val coilVersion = "2.5.0"
+
+    // Google Play Services Auth
+    implementation("com.google.android.gms:play-services-auth:$playServicesAuthVersion")
+
+    // Firebase Auth with KTX
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:$coilVersion")
+
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Firebase services with BOM
+    implementation(platform(libs.firebase.bom))
+    implementation("com.google.firebase:firebase-database-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 }

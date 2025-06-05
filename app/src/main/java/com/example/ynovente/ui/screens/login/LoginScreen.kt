@@ -1,8 +1,10 @@
 package com.example.ynovente.ui.screens.login
 
 import android.app.Activity
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -17,6 +19,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.example.ynovente.data.repository.AuthResult
 
+@RequiresApi(Build.VERSION_CODES.P)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -30,29 +33,30 @@ fun LoginScreen(
     val context = LocalContext.current
     val activity = context as Activity
 
-    // Google Sign-In Launcher
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             val account = task.getResult(ApiException::class.java)
             val idToken = account.idToken
+
             if (idToken != null) {
-                viewModel.firebaseAuthWithGoogle(idToken) { authResult: AuthResult ->
+                viewModel.firebaseAuthWithGoogle(idToken) { authResult ->
                     if (!authResult.success) {
                         error = authResult.errorMessage ?: "Erreur lors de la connexion Google"
                     }
                 }
             } else {
-                error = "Impossible de récupérer le token Google"
+                error = "Aucun token d'identification reçu de Google"
             }
+        } catch (e: ApiException) {
+            error = "Erreur Google Sign-In: ${e.statusCode} - ${e.message}"
         } catch (e: Exception) {
-            error = "Erreur Google SignIn : ${e.localizedMessage}"
+            error = "Erreur inattendue: ${e.localizedMessage}"
         }
     }
 
-    // Navigation automatique après login
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             onLoginSuccess()
@@ -88,7 +92,7 @@ fun LoginScreen(
         Button(
             onClick = {
                 error = null
-                viewModel.login(email, password) { authResult: AuthResult ->
+                viewModel.login(email, password) { authResult ->
                     if (!authResult.success) {
                         error = authResult.errorMessage ?: "Login invalide"
                     }
@@ -103,9 +107,13 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                val googleSignInClient = viewModel.getGoogleSignInClient()
-                val signInIntent = googleSignInClient.signInIntent
-                googleSignInLauncher.launch(signInIntent)
+                try {
+                    val googleSignInClient = viewModel.getGoogleSignInClient()
+                    val signInIntent = googleSignInClient.signInIntent
+                    googleSignInLauncher.launch(signInIntent)
+                } catch (e: Exception) {
+                    error = "Impossible de démarrer Google Sign-In: ${e.localizedMessage}"
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)

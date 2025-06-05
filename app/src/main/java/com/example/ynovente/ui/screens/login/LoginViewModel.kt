@@ -1,5 +1,7 @@
 package com.example.ynovente.ui.screens.login
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.repository.AuthResult
@@ -29,9 +31,8 @@ class LoginViewModel(
         }
     }
 
-    fun getGoogleSignInClient(): GoogleSignInClient {
-        return authRepository.getGoogleSignInClient()
-    }
+    @RequiresApi(Build.VERSION_CODES.P)
+    fun getGoogleSignInClient(): GoogleSignInClient = authRepository.getGoogleSignInClient()
 
     fun firebaseAuthWithGoogle(idToken: String, onResult: (AuthResult) -> Unit) {
         viewModelScope.launch {
