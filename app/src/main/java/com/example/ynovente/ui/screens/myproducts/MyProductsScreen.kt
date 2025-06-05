@@ -1,5 +1,6 @@
 package com.example.ynovente.ui.screens.myproducts
 
+import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -14,8 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +25,6 @@ import androidx.navigation.NavController
 import com.example.ynovente.data.model.Offer
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import androidx.core.net.toUri
 
 enum class MyProductsFilterType { DATE, PRICE, NAME }
 
@@ -177,33 +178,66 @@ fun MyProductCard(
         offer.endDate
     }
 
+    val isDarkTheme = isSystemInDarkTheme()
+
+    val cardBackground = if (isFinished) {
+        if (isDarkTheme) {
+            Color(0xFF1B5E20)
+        } else {
+            Color(0xFFE8F5E9)
+        }
+    } else {
+        if (isDarkTheme) {
+            MaterialTheme.colorScheme.surfaceContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
+    }
+
+    val textColor = if (isFinished) {
+        if (isDarkTheme) Color.White else Color.Black
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .then(
-                if (isFinished) Modifier.background(Color(0xFFB9F6CA)) else Modifier // Vert clair
-            )
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = if (isFinished) Color(0xFFB9F6CA) else MaterialTheme.colorScheme.surface
+            containerColor = cardBackground
         ),
-        elevation = CardDefaults.cardElevation(4.dp),
-        shape = MaterialTheme.shapes.medium
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDarkTheme) 8.dp else 4.dp,
+            pressedElevation = if (isDarkTheme) 4.dp else 2.dp,
+            focusedElevation = if (isDarkTheme) 8.dp else 4.dp,
+            hoveredElevation = if (isDarkTheme) 10.dp else 6.dp
+        ),
+        shape = MaterialTheme.shapes.medium,
+        border = if (isDarkTheme && !isFinished) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        } else {
+            null
+        }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Titre sur une ligne, plus de bouton à droite
             Text(
                 offer.title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1
+                maxLines = 1,
+                color = textColor
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 offer.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isFinished) {
+                    if (isDarkTheme) Color(0xFFB3E0B3) else Color(0xFF2E7D32)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
             Spacer(Modifier.height(8.dp))
             Row(
@@ -215,15 +249,40 @@ fun MyProductCard(
                     "${offer.price} €",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (isFinished) {
+                            if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFF1B5E20)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
                     )
                 )
                 Text(
                     "Fin: $formattedEndDate",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isFinished) {
+                        if (isDarkTheme) Color(0xFF81C784) else Color(0xFF2E7D32)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+            winnerEmail?.let { email ->
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Gagnant: $email",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDarkTheme) Color(0xFF81C784) else Color(0xFF2E7D32)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun isSystemInDarkTheme(): Boolean {
+    val configuration = LocalConfiguration.current
+    return when (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+        Configuration.UI_MODE_NIGHT_YES -> true
+        else -> false
     }
 }

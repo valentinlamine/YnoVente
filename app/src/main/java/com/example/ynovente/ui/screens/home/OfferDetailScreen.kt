@@ -1,7 +1,11 @@
 package com.example.ynovente.ui.screens.home
 
+import android.content.Intent
+import android.content.res.Configuration
+import com.example.ynovente.ui.screens.home.OfferEditContent
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,6 +49,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.core.net.toUri
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,8 +118,28 @@ fun OfferDetailScreen(
             val isMyOffer = userId != null && currentOffer.userId == userId
 
             if (isEditing && isMyOffer) {
-                // Placez ici votre composant d'édition OfferEditContent, à créer séparément
-                // OfferEditContent(...)
+                OfferEditContent(
+                    offer = currentOffer,
+                    onSave = { title, description, endDate ->
+                        coroutineScope.launch {
+                            try {
+                                firebaseOfferRepository.updateOffer(
+                                    offerId = currentOffer.id,
+                                    title = title,
+                                    description = description,
+                                    endDate = endDate
+                                )
+                                editSuccess = true
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar("Erreur lors de la mise à jour : ${e.message}")
+                            }
+                        }
+                    },
+                    onCancel = { isEditing = false },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
             } else {
                 OfferDetailContent(
                     offer = currentOffer,
@@ -212,8 +238,29 @@ fun OfferDetailContent(
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
             shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            elevation = if (isSystemInDarkTheme()) {
+                CardDefaults.elevatedCardElevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 4.dp
+                )
+            } else {
+                CardDefaults.elevatedCardElevation(
+                    defaultElevation = 2.dp,
+                    pressedElevation = 1.dp
+                )
+            },
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSystemInDarkTheme()) {
+                    MaterialTheme.colorScheme.surfaceContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
+            ),
+            border = if (isSystemInDarkTheme()) {
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            } else {
+                null
+            }
         ) {
             Column(
                 modifier = Modifier.padding(14.dp),
@@ -397,12 +444,12 @@ fun OfferDetailContent(
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = {
-                            val intent = android.content.Intent(
-                                android.content.Intent.ACTION_SENDTO,
-                                android.net.Uri.parse("mailto:$winnerEmail")
+                            val intent = Intent(
+                                Intent.ACTION_SENDTO,
+                                "mailto:$winnerEmail".toUri()
                             )
                             intent.putExtra(
-                                android.content.Intent.EXTRA_SUBJECT,
+                                Intent.EXTRA_SUBJECT,
                                 "Félicitations pour votre enchère gagnée : ${offer.title}"
                             )
                             context.startActivity(intent)
@@ -417,14 +464,30 @@ fun OfferDetailContent(
 
         // HISTORIQUE ENCHERES
         Spacer(Modifier.height(10.dp))
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 1.dp
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSystemInDarkTheme()) {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
+            ),
+            elevation = if (isSystemInDarkTheme()) {
+                CardDefaults.cardElevation(defaultElevation = 4.dp)
+            } else {
+                CardDefaults.cardElevation(defaultElevation = 1.dp)
+            },
+            border = if (isSystemInDarkTheme()) {
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            } else {
+                null
+            }
         ) {
-            BidsHistorySectionMaterial3(bids = bids, modifier = Modifier.padding(16.dp))
+            BidsHistorySectionMaterial3(
+                bids = bids,
+                modifier = Modifier.padding(16.dp)
+            )
         }
         Spacer(Modifier.height(12.dp))
 
@@ -468,10 +531,27 @@ fun formatBidDateDynamic(zdt: ZonedDateTime): String {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) {
+    val isDarkTheme = isSystemInDarkTheme()
+
     Column(modifier = modifier) {
-        Text("Historique des enchères", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Historique des enchères",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (isDarkTheme) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
         if (bids.isEmpty()) {
-            Text("Aucune enchère pour le moment.")
+            Text(
+                "Aucune enchère pour le moment.",
+                color = if (isDarkTheme) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         } else {
             bids.forEach { bid ->
                 val localDate = try {
@@ -512,5 +592,15 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
                 }
             }
         }
+    }
+}
+
+// Ajouter cette fonction utilitaire si elle n'existe pas déjà
+@Composable
+private fun isSystemInDarkTheme(): Boolean {
+    val configuration = LocalConfiguration.current
+    return when (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+        Configuration.UI_MODE_NIGHT_YES -> true
+        else -> false
     }
 }

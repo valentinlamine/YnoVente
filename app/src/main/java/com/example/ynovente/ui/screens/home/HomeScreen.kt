@@ -1,5 +1,6 @@
 package com.example.ynovente.ui.screens.home
 
+import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -20,6 +21,8 @@ import com.example.ynovente.data.model.Offer
 import com.example.ynovente.data.repository.FirebaseOfferRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.platform.LocalConfiguration
 
 enum class FilterType { DATE, PRICE, NAME }
 
@@ -114,28 +117,59 @@ fun AuctionCard(
     onClick: () -> Unit
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
+    val formattedEndDate = try {
+        LocalDateTime.parse(offer.endDate).format(dateFormatter)
+    } catch (e: Exception) {
+        offer.endDate
+    }
+
+    val isDarkTheme = isSystemInDarkTheme()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (isDarkTheme) {
+                MaterialTheme.colorScheme.surfaceContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         ),
-        elevation = CardDefaults.cardElevation(4.dp),
-        shape = MaterialTheme.shapes.medium
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDarkTheme) 8.dp else 4.dp,
+            pressedElevation = if (isDarkTheme) 4.dp else 2.dp,
+            focusedElevation = if (isDarkTheme) 8.dp else 4.dp,
+            hoveredElevation = if (isDarkTheme) 10.dp else 6.dp
+        ),
+        shape = MaterialTheme.shapes.medium,
+        border = if (isDarkTheme) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        } else {
+            null
+        }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 offer.title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = if (isDarkTheme) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 offer.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isDarkTheme) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
             Spacer(Modifier.height(8.dp))
             Row(
@@ -151,17 +185,24 @@ fun AuctionCard(
                     )
                 )
                 Text(
-                    "Fin: ${
-                        try {
-                            LocalDateTime.parse(offer.endDate).format(dateFormatter)
-                        } catch (e: Exception) {
-                            offer.endDate
-                        }
-                    }",
+                    "Fin: $formattedEndDate",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isDarkTheme) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun isSystemInDarkTheme(): Boolean {
+    val configuration = LocalConfiguration.current
+    return when (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+        Configuration.UI_MODE_NIGHT_YES -> true
+        else -> false
     }
 }
