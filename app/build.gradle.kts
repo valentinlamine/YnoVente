@@ -40,12 +40,6 @@ android {
         buildConfig = true
     }
 
-    // Add compose options for proper Kotlin compiler compatibility
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
-
-    // Add packaging options to avoid conflicts
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -78,9 +72,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("com.google.firebase:firebase-database-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("com.google.firebase:firebase-messaging:24.1.1")
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.messaging)
 
     // Make sure you have these versions
     val playServicesAuthVersion = "21.3.0"
