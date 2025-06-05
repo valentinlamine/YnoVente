@@ -74,10 +74,6 @@ app/
 └── build.gradle.kts              # Configuration du projet
 ```
 
-## Captures d'écran
-
-*(Ajoutez des captures d'écran de votre application ici)*
-
 ## Auteur
 
 - **Valentin LAMINE** - [@valentinlamine](https://github.com/valentinlamine)
