@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,7 +43,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateOfferScreen(
@@ -99,7 +95,7 @@ fun CreateOfferScreen(
                         error = "Erreur lors de l'upload de l'image"
                         imageUploading = false
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     error = "Erreur lors de l'upload de l'image"
                     imageUploading = false
                 }
@@ -129,7 +125,7 @@ fun CreateOfferScreen(
                         error = "Erreur lors de l'upload de l'image"
                         imageUploading = false
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     error = "Erreur lors de l'upload de l'image"
                     imageUploading = false
                 }
@@ -257,7 +253,7 @@ fun CreateOfferScreen(
                     try {
                         LocalDateTime.parse(endDate, dateFormatter)
                             .format(DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm"))
-                    } catch (e: Exception) { "" }
+                    } catch (_: Exception) { "" }
                 } else "",
                 onValueChange = {},
                 label = { Text("Date de fin") },

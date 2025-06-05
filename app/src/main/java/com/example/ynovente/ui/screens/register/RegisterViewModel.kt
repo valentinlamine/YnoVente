@@ -5,8 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.repository.AuthResult
 import com.example.ynovente.data.repository.FirebaseAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.firebase.messaging.FirebaseMessaging
@@ -16,7 +14,6 @@ class RegisterViewModel(
     private val authRepository: FirebaseAuthRepository
 ) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     fun register(
         name: String,

@@ -1,7 +1,5 @@
 package com.example.ynovente.data.repository
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.example.ynovente.data.model.Bid
 import com.example.ynovente.data.model.Offer
 import com.google.firebase.database.DataSnapshot
@@ -51,7 +49,6 @@ class FirebaseOfferRepository {
         awaitClose { offersRef.child(offerId).removeEventListener(listener) }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun placeBid(offerId: String, userId: String, userName: String, amount: Double) {
         val database = FirebaseDatabase.getInstance()
         val bidsRef = database.getReference("bids").child(offerId)
@@ -115,7 +112,7 @@ class FirebaseOfferRepository {
             try {
                 val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(it)
                 storageRef.delete().await()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Si l'image n'existe pas ou déjà supprimée, ignorer l'erreur
             }
         }

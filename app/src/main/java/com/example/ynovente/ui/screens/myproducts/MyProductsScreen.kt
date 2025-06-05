@@ -1,9 +1,6 @@
 package com.example.ynovente.ui.screens.myproducts
 
 import android.content.res.Configuration
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,12 +25,10 @@ import java.time.format.DateTimeFormatter
 
 enum class MyProductsFilterType { DATE, PRICE, NAME }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyProductsScreen(
     navController: NavController,
-    innerPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: MyProductsViewModel
 ) {
     val finishedOffersWithWinner by viewModel.finishedOffersWithWinner.collectAsState()
@@ -162,7 +157,6 @@ fun MyProductsScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MyProductCard(
     offer: Offer,
@@ -174,7 +168,7 @@ fun MyProductCard(
     val formattedEndDate = try {
         val date = LocalDateTime.parse(offer.endDate)
         date.format(dateFormatter)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         offer.endDate
     }
 

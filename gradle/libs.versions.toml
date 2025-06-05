@@ -1,7 +1,6 @@
 [versions]
 agp = "8.10.1"
 firebaseBom = "33.14.0"
-firebaseMessaging = "24.1.1"
 kotlin = "2.0.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
@@ -12,7 +11,6 @@ activityCompose = "1.10.1"
 composeBom = "2025.06.00"
 navigationCompose = "2.9.0"
 pagingCompose = "3.3.6"
-firebaseAuthKtx = "23.2.1"
 
 [libraries]
 # Core
@@ -37,13 +35,10 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database-ktx" }
-firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage-ktx" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
 
 # Testing
-firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx" }
-google-firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

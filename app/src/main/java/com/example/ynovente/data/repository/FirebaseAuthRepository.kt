@@ -1,8 +1,6 @@
 package com.example.ynovente.data.repository
 
 import android.app.Activity
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
@@ -29,12 +27,11 @@ class FirebaseAuthRepository(
     private val _isLoggedIn = MutableStateFlow(auth.currentUser != null)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
 
-    private val GOOGLE_CLIENT_ID = "1070335553426-9ng0lbpm288d92ar26v8kf5ck1krr78n.apps.googleusercontent.com"
+    private val googleClientID = "1070335553426-9ng0lbpm288d92ar26v8kf5ck1krr78n.apps.googleusercontent.com"
 
-    @RequiresApi(Build.VERSION_CODES.P)
     fun getGoogleSignInClient(): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(GOOGLE_CLIENT_ID)
+            .requestIdToken(googleClientID)
             .requestEmail()
             .requestProfile()
             .build()
@@ -79,15 +76,6 @@ class FirebaseAuthRepository(
         }
     }
 
-    suspend fun updateProfileEmail(newEmail: String) {
-        val user = auth.currentUser
-        user?.updateEmail(newEmail)?.await()
-        user?.let {
-            val token = FirebaseMessaging.getInstance().token.await()
-            saveUserToDatabase(it.uid, it.displayName ?: "", newEmail, token)
-        }
-    }
-
     suspend fun loginWithGoogle(idToken: String): AuthResult {
         if (idToken.isBlank()) {
             return AuthResult(success = false, errorMessage = "Token Google vide")
@@ -100,7 +88,7 @@ class FirebaseAuthRepository(
             authResult.user?.let { user ->
                 val token = try {
                     FirebaseMessaging.getInstance().token.await()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
                 saveUserToDatabase(user.uid, user.displayName ?: "", user.email ?: "", token)
@@ -126,7 +114,7 @@ class FirebaseAuthRepository(
         } else {
             false
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 

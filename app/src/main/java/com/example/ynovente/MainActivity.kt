@@ -8,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,13 +60,12 @@ class MainActivity : ComponentActivity() {
                         val window = (view.context as MainActivity).window
                         val windowController = WindowCompat.getInsetsController(window, view)
 
-                        // Configuration des couleurs des barres système
-                        window.statusBarColor = android.graphics.Color.TRANSPARENT
-                        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                        WindowCompat.setDecorFitsSystemWindows(window, false)
 
-                        // Configuration de l'apparence des icônes (claires ou sombres)
                         windowController.isAppearanceLightStatusBars = !isDarkTheme
                         windowController.isAppearanceLightNavigationBars = !isDarkTheme
+
+                        windowController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                     }
                 }
 

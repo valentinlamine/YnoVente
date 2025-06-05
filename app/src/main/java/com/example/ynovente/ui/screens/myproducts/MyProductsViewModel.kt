@@ -1,20 +1,16 @@
 package com.example.ynovente.ui.screens.myproducts
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ynovente.data.model.Offer
-import com.example.ynovente.data.model.Bid
 import com.example.ynovente.data.model.FinishedOfferDisplay
 import com.example.ynovente.data.repository.FirebaseOfferRepository
 import com.example.ynovente.data.repository.FirebaseUserRepository
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
-@RequiresApi(Build.VERSION_CODES.O)
 class MyProductsViewModel(
     private val offerRepository: FirebaseOfferRepository,
     private val userRepository: FirebaseUserRepository
@@ -31,7 +27,7 @@ class MyProductsViewModel(
             offers.filter { offer ->
                 try {
                     LocalDateTime.parse(offer.endDate).isBefore(LocalDateTime.now())
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     false
                 }
             }
@@ -43,7 +39,7 @@ class MyProductsViewModel(
             offers.filter { offer ->
                 try {
                     LocalDateTime.parse(offer.endDate).isAfter(LocalDateTime.now())
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     true
                 }
             }
@@ -51,6 +47,7 @@ class MyProductsViewModel(
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Liste enrichie pour affichage
+    @OptIn(ExperimentalCoroutinesApi::class)
     val finishedOffersWithWinner: StateFlow<List<FinishedOfferDisplay>> =
         finishedOffers
             .flatMapLatest { offers ->

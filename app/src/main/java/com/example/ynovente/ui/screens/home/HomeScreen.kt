@@ -1,8 +1,6 @@
 package com.example.ynovente.ui.screens.home
 
 import android.content.res.Configuration
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +24,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 
 enum class FilterType { DATE, PRICE, NAME }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -42,7 +39,7 @@ fun HomeScreen(
     val sortedOffers = remember(offers, filter) {
         when (filter) {
             FilterType.DATE -> offers.sortedBy {
-                try { LocalDateTime.parse(it.endDate) } catch (e: Exception) { null }
+                try { LocalDateTime.parse(it.endDate) } catch (_: Exception) { null }
             }
             FilterType.PRICE -> offers.sortedBy { it.price }
             FilterType.NAME -> offers.sortedBy { it.title }
@@ -110,7 +107,6 @@ fun HomeScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AuctionCard(
     offer: Offer,
@@ -119,7 +115,7 @@ fun AuctionCard(
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") }
     val formattedEndDate = try {
         LocalDateTime.parse(offer.endDate).format(dateFormatter)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         offer.endDate
     }
 

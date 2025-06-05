@@ -1,8 +1,6 @@
 package com.example.ynovente.ui.navigation
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -21,7 +19,6 @@ import com.example.ynovente.ui.screens.myproducts.MyProductsViewModel
 import com.example.ynovente.ui.screens.profile.ProfileScreen
 
 @SuppressLint("StateFlowValueCalledInComposition")
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavHost(
     navController: NavHostController,

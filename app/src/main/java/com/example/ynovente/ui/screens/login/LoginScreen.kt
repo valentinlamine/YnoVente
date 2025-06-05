@@ -1,30 +1,25 @@
 package com.example.ynovente.ui.screens.login
 
-import android.app.Activity
 import android.content.res.Configuration
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
-import com.example.ynovente.data.repository.AuthResult
 
-@RequiresApi(Build.VERSION_CODES.P)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -35,8 +30,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
-    val context = LocalContext.current
-    val activity = context as Activity
     val isDarkTheme = isSystemInDarkTheme()
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
@@ -153,13 +146,13 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Diviseur
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.weight(1f),
+                thickness = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant
             )
             Text(
@@ -167,8 +160,9 @@ fun LoginScreen(
                 modifier = Modifier.padding(horizontal = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.weight(1f),
+                thickness = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant
             )
         }

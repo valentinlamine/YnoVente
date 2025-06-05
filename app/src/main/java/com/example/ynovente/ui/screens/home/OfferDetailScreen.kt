@@ -2,9 +2,6 @@ package com.example.ynovente.ui.screens.home
 
 import android.content.Intent
 import android.content.res.Configuration
-import com.example.ynovente.ui.screens.home.OfferEditContent
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,7 +48,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 import androidx.core.net.toUri
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfferDetailScreen(
@@ -189,7 +185,6 @@ fun OfferDetailScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun OfferDetailContent(
     offer: Offer,
@@ -210,7 +205,7 @@ fun OfferDetailContent(
 
     val isFinished = try {
         LocalDateTime.parse(offer.endDate).isBefore(LocalDateTime.now())
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 
@@ -366,7 +361,7 @@ fun OfferDetailContent(
                                     try {
                                         LocalDateTime.parse(offer.endDate)
                                             .format(dateFormatter)
-                                    } catch (e: Exception) {
+                                    } catch (_: Exception) {
                                         offer.endDate
                                     }
                                 }"
@@ -515,7 +510,6 @@ fun OfferDetailContent(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 fun formatBidDateDynamic(zdt: ZonedDateTime): String {
     val now = ZonedDateTime.now(zdt.zone).truncatedTo(ChronoUnit.DAYS)
     val bidDay = zdt.truncatedTo(ChronoUnit.DAYS)
@@ -528,7 +522,6 @@ fun formatBidDateDynamic(zdt: ZonedDateTime): String {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) {
     val isDarkTheme = isSystemInDarkTheme()
@@ -556,7 +549,7 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
             bids.forEach { bid ->
                 val localDate = try {
                     ZonedDateTime.parse(bid.date).withZoneSameInstant(ZoneId.of("Europe/Paris"))
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
                 Row(
@@ -595,7 +588,6 @@ fun BidsHistorySectionMaterial3(bids: List<Bid>, modifier: Modifier = Modifier) 
     }
 }
 
-// Ajouter cette fonction utilitaire si elle n'existe pas déjà
 @Composable
 private fun isSystemInDarkTheme(): Boolean {
     val configuration = LocalConfiguration.current

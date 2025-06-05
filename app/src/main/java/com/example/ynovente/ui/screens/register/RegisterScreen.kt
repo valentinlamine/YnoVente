@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,7 +18,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.ynovente.data.repository.AuthResult
 import com.example.ynovente.data.repository.FirebaseAuthRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
@@ -236,8 +236,9 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
                 Text(
@@ -245,8 +246,9 @@ fun RegisterScreen(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
             }
