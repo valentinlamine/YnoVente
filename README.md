@@ -78,6 +78,9 @@ app/
 
 - **Valentin LAMINE** - [@valentinlamine](https://github.com/valentinlamine)
 - **Mathis GREDT** - [@MathisGredt](https://github.com/MathisGredt)
+- **Dimitri BRANCOURT** - [@Aph0rism](https://github.com/Aph0rism)
+- **Mattéo VOCANSON** - [@matteoVcs](https://github.com/matteoVcs)
+- **Flavio NUNES** - [@zedtsuro](https://github.com/zedtsuro)
 
 ## Licence
 
