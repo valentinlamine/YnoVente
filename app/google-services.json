@@ -39,6 +39,14 @@
           }
         },
         {
+          "client_id": "1070335553426-lkcsbrrlvmv49hldhiqnn2grnu2jfib3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ynovente",
+            "certificate_hash": "783eb2c4b2cfc7a390bc50f19d58664bcf021202"
+          }
+        },
+        {
           "client_id": "1070335553426-9ng0lbpm288d92ar26v8kf5ck1krr78n.apps.googleusercontent.com",
           "client_type": 3
         }
